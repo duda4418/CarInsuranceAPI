@@ -47,7 +47,7 @@ class InsurancePolicyBase(BaseModel):
 	logged_expiry_at: Optional[datetime] = None
 
 class InsurancePolicyCreate(InsurancePolicyBase):
-	car_id: int
+	pass
 
 class InsurancePolicyRead(InsurancePolicyBase):
 	id: int
