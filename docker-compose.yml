@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    container_name: carins_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-carinsdb}
+      POSTGRES_USER: ${POSTGRES_USER:-carinsuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carinspass}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-carinsuser} -d ${POSTGRES_DB:-carinsdb}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pg_data:
