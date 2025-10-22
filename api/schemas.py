@@ -61,7 +61,7 @@ class ClaimBase(BaseModel):
 	amount: Decimal
 
 class ClaimCreate(ClaimBase):
-	car_id: int
+	pass
 
 class ClaimRead(ClaimBase):
 	id: int

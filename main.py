@@ -1,13 +1,19 @@
 from fastapi import FastAPI
 
-from api.routes.cars import cars_router
-from api.routes.health import health_router
+from api.routers.cars import cars_router
+from api.routers.claims import claims_router
+from api.routers.health import health_router
+from api.routers.history import history_router
+from api.routers.policies import policies_router
 
 app = FastAPI(title="Car Insurance API", version="0.1.0")
 
 # Routers
 app.include_router(health_router, prefix="/api")
 app.include_router(cars_router, prefix="/api")
+app.include_router(policies_router, prefix="/api")
+app.include_router(claims_router, prefix="/api")
+app.include_router(history_router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn
