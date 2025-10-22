@@ -5,7 +5,7 @@ from api.routes.health import health_router
 app = FastAPI(title="Car Insurance API", version="0.1.0")
 
 # Routers
-app.include_router(health_router)
+app.include_router(health_router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn
