@@ -41,3 +41,5 @@ def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Sessio
     db.refresh(db_policy)
 
     return db_policy
+
+# GET /cars/{car_id}/insurance-valid?date=YYYY-MM-DD
