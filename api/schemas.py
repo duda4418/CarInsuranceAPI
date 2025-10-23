@@ -1,72 +1,82 @@
-
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
-from pydantic import BaseModel
+from typing import Optional
+from core.config import CamelModel
 
-class OwnerBase(BaseModel):
+
+# Owner Models
+class OwnerCreate(CamelModel):
 	name: str
 	email: Optional[str] = None
 
-class OwnerCreate(OwnerBase):
-	pass
-
-class OwnerRead(BaseModel):
+class OwnerRead(CamelModel):
 	id: int
 	name: str
 	email: Optional[str] = None
-	class Config:
-		from_attributes = True
-		ser_json_order = True
+	model_config = {
+		**CamelModel.model_config,
+		'from_attributes': True,
+	}
 
-class CarBase(BaseModel):
-	id: int
+
+# Car Models
+class CarCreate(CamelModel):
 	vin: str
 	make: Optional[str] = None
 	model: Optional[str] = None
 	year_of_manufacture: Optional[int] = None
-	owner: OwnerRead = None
-
-class CarCreate(CarBase):
 	owner_id: int
 
-class CarRead(BaseModel):
+class CarRead(CamelModel):
 	id: int
 	vin: str
 	make: Optional[str] = None
 	model: Optional[str] = None
 	year_of_manufacture: Optional[int] = None
 	owner: OwnerRead
-	class Config:
-		from_attributes = True
+	model_config = {
+		**CamelModel.model_config,
+		'from_attributes': True,
+	}
 
-class InsurancePolicyBase(BaseModel):
+
+# Insurance Policy Models
+class InsurancePolicyCreate(CamelModel):
+	car_id: int
 	provider: Optional[str] = None
 	start_date: date
 	end_date: date
 	logged_expiry_at: Optional[datetime] = None
 
-class InsurancePolicyCreate(InsurancePolicyBase):
-	pass
-
-class InsurancePolicyRead(InsurancePolicyBase):
+class InsurancePolicyRead(CamelModel):
 	id: int
 	car_id: int
-	class Config:
-		from_attributes = True
+	provider: Optional[str] = None
+	start_date: date
+	end_date: date
+	logged_expiry_at: Optional[datetime] = None
+	model_config = {
+		**CamelModel.model_config,
+		'from_attributes': True,
+	}
 
-class ClaimBase(BaseModel):
+
+# Claim Models
+class ClaimCreate(CamelModel):
+	car_id: int
 	claim_date: date
 	description: str
 	amount: Decimal
 
-class ClaimCreate(ClaimBase):
-	pass
-
-class ClaimRead(ClaimBase):
+class ClaimRead(CamelModel):
 	id: int
 	car_id: int
+	claim_date: date
+	description: str
+	amount: Decimal
 	created_at: datetime
-	class Config:
-		from_attributes = True
+	model_config = {
+		**CamelModel.model_config,
+		'from_attributes': True,
+	}
 

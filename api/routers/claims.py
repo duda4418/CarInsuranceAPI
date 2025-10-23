@@ -130,6 +130,6 @@ def delete_claim(claim_id: int, db: Session = Depends(get_db)):
 
 	db.delete(claim)
 	db.commit()
-	
+
 	return None
 
