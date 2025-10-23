@@ -17,7 +17,10 @@ policies_router = APIRouter()
 	"/policies",
 	response_model=List[InsurancePolicyRead],
 	status_code=status.HTTP_200_OK,
-	responses={200: {"description": "List of policies"}}
+	responses={
+		200: {"description": "List of policies"},
+		422: {"description": "Validation error in query/path"}
+	}
 )
 def list_policies(db: Session = Depends(get_db)):
 	return db.query(InsurancePolicy).all()
@@ -29,7 +32,8 @@ def list_policies(db: Session = Depends(get_db)):
 	status_code=status.HTTP_200_OK,
 	responses={
 		200: {"description": "Policy retrieved"},
-		404: {"description": "Policy not found"}
+		404: {"description": "Policy not found"},
+		422: {"description": "Invalid path parameter"}
 	}
 )
 def get_policy(policy_id: int, db: Session = Depends(get_db)):
@@ -45,8 +49,9 @@ def get_policy(policy_id: int, db: Session = Depends(get_db)):
 	status_code=status.HTTP_201_CREATED,
 	responses={
 		201: {"description": "Policy created"},
-		400: {"description": "Invalid input"},
-		404: {"description": "Car not found"}
+		400: {"description": "Domain validation error (date logic)"},
+		404: {"description": "Car not found"},
+		422: {"description": "Request body validation error"}
 	}
 )
 def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db), response: Response = None):
@@ -77,7 +82,7 @@ def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db),
 	responses={
 		200: {"description": "Policy updated"},
 		404: {"description": "Policy not found"},
-		400: {"description": "Invalid input"}
+		422: {"description": "Request body validation error"}
 	}
 )
 def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = Depends(get_db)):
@@ -105,7 +110,8 @@ def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = 
 	status_code=status.HTTP_204_NO_CONTENT,
 	responses={
 		204: {"description": "Policy deleted"},
-		404: {"description": "Policy not found"}
+		404: {"description": "Policy not found"},
+		422: {"description": "Invalid path parameter"}
 	}
 )
 def delete_policy(policy_id: int, db: Session = Depends(get_db)):

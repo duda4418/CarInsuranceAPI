@@ -17,7 +17,10 @@ claims_router = APIRouter()
 	"/claims",
 	response_model=List[ClaimRead],
 	status_code=status.HTTP_200_OK,
-	responses={200: {"description": "List of claims"}}
+	responses={
+		200: {"description": "List of claims"},
+		422: {"description": "Validation error in query/path"}
+	}
 )
 def list_claims(db: Session = Depends(get_db)):
 	return db.query(Claim).all()
@@ -29,7 +32,8 @@ def list_claims(db: Session = Depends(get_db)):
 	status_code=status.HTTP_200_OK,
 	responses={
 		200: {"description": "Claim retrieved"},
-		404: {"description": "Claim not found"}
+		404: {"description": "Claim not found"},
+		422: {"description": "Invalid path parameter"}
 	}
 )
 def get_claim(claim_id: int, db: Session = Depends(get_db)):
@@ -45,8 +49,9 @@ def get_claim(claim_id: int, db: Session = Depends(get_db)):
 	status_code=status.HTTP_201_CREATED,
 	responses={
 		201: {"description": "Claim created"},
-		400: {"description": "Invalid input"},
-		404: {"description": "Car not found"}
+		400: {"description": "Domain validation error"},
+		404: {"description": "Car not found"},
+		422: {"description": "Request body validation error"}
 	}
 )
 def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
@@ -76,7 +81,7 @@ def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: 
 	responses={
 		200: {"description": "Claim updated"},
 		404: {"description": "Claim not found"},
-		400: {"description": "Invalid input"}
+		422: {"description": "Request body validation error"}
 	}
 )
 def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_db)):
@@ -102,7 +107,8 @@ def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_
 	status_code=status.HTTP_204_NO_CONTENT,
 	responses={
 		204: {"description": "Claim deleted"},
-		404: {"description": "Claim not found"}
+		404: {"description": "Claim not found"},
+		422: {"description": "Invalid path parameter"}
 	}
 )
 def delete_claim(claim_id: int, db: Session = Depends(get_db)):

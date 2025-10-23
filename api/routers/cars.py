@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, status, Query, Response
 from sqlalchemy.orm import Session, joinedload
 # --- Project Imports ---
-from db.models import Car, InsurancePolicy, Claim
+from db.models import Car, InsurancePolicy, Claim, Owner
 from db.session import get_db
 from api.schemas import CarRead, CarCreate, InsurancePolicyCreate, InsurancePolicyRead, ClaimCreate, ClaimRead, InsuranceValidityResponse
 
@@ -25,7 +25,10 @@ cars_router = APIRouter()
     "/cars",
     response_model=List[CarRead],
     status_code=status.HTTP_200_OK,
-    responses={200: {"status": "ok"}}
+    responses={
+        200: {"description": "List of cars"},
+        422: {"description": "Validation error in query/path"}
+    }
 )
 def list_cars(db: Session = Depends(get_db)):
     car_list = db.query(Car).options(joinedload(Car.owner)).all()
@@ -39,7 +42,8 @@ def list_cars(db: Session = Depends(get_db)):
     status_code=status.HTTP_200_OK,
     responses={
         200: {"description": "Car found"},
-        404: {"description": "Car not found"}
+        404: {"description": "Car not found"},
+        422: {"description": "Invalid path parameter"}
     }
 )
 def get_car(car_id: int, db: Session = Depends(get_db)):
@@ -53,12 +57,38 @@ def get_car(car_id: int, db: Session = Depends(get_db)):
     "/cars",
     response_model=CarRead,
     status_code=status.HTTP_201_CREATED,
-    responses={201: {"description": "Car created"}, 400: {"description": "Invalid input"}}
+    responses={
+        201: {"description": "Car created"},
+        400: {"description": "Domain validation error"},
+        404: {"description": "Owner not found"},
+        422: {"description": "Request body validation error"}
+    }
 )
 def create_car(car: CarCreate, db: Session = Depends(get_db), response: Response = None):
-    db_car = Car(**car.dict())
+    """Create a car ensuring owner exists and VIN is unique.
+
+    Returns 400 (DomainValidationError) if VIN already exists or owner is missing.
+    """
+    # Ensure owner exists early
+    owner = db.query(Owner).filter(Owner.id == car.owner_id).first()
+    if not owner:
+        raise NotFoundError("Owner", car.owner_id)
+
+    # Pre-flight VIN uniqueness check to return a clean validation error instead of 500
+    existing = db.query(Car).filter(Car.vin == car.vin).first()
+    if existing:
+        raise ValidationError(f"VIN '{car.vin}' already exists")
+
+    db_car = Car(**car.model_dump())  # model_dump preferred over dict() in Pydantic v2
     db.add(db_car)
-    db.commit()
+    try:
+        db.commit()
+    except Exception as e:  # Fallback in case of race condition (duplicate VIN inserted concurrently)
+        from sqlalchemy.exc import IntegrityError
+        db.rollback()
+        if isinstance(e, IntegrityError):
+            raise ValidationError(f"VIN '{car.vin}' already exists")
+        raise
     db.refresh(db_car)
 
     if response is not None:
@@ -74,7 +104,7 @@ def create_car(car: CarCreate, db: Session = Depends(get_db), response: Response
     responses={
         200: {"description": "Car updated"},
         404: {"description": "Car not found"},
-        400: {"description": "Invalid input"}
+        422: {"description": "Request body validation error"}
     }
 )
 def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
@@ -93,7 +123,8 @@ def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         204: {"description": "Car deleted"},
-        404: {"description": "Car not found"}
+        404: {"description": "Car not found"},
+        422: {"description": "Invalid path parameter"}
     }
 )
 def delete_car(car_id: int, db: Session = Depends(get_db)):
@@ -111,13 +142,16 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
     responses={
         201: {"description": "Policy created"},
-        400: {"description": "Invalid input or date logic"},
-        404: {"description": "Car not found"}
+        400: {"description": "Domain validation error (date logic)"},
+        404: {"description": "Car not found"},
+        422: {"description": "Request body validation error"}
     }
 )
-def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Session = Depends(get_db)):
+def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Session = Depends(get_db), response: Response = None):
     created = svc_create_policy(db, car_id, policy)
     log.info("policy_created", policyId=created.id, carId=car_id, provider=created.provider)
+    if response is not None:
+        response.headers["Location"] = f"/api/policies/{created.id}"
     return created
 
 
@@ -127,8 +161,9 @@ def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Sessio
     status_code=status.HTTP_201_CREATED,
     responses={
         201: {"description": "Claim created"},
-        400: {"description": "Invalid input"},
-        404: {"description": "Car not found"}
+        400: {"description": "Domain validation error"},
+        404: {"description": "Car not found"},
+        422: {"description": "Request body validation error"}
     }
 )
 def create_claims(car_id: int, claim: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
@@ -145,8 +180,9 @@ def create_claims(car_id: int, claim: ClaimCreate, db: Session = Depends(get_db)
     response_model=InsuranceValidityResponse,
     responses={
         200: {"description": "Insurance validity for car and date"},
-        400: {"description": "Invalid date format or out of range"},
-        404: {"description": "Car not found"}
+        400: {"description": "Domain validation error (date logic)"},
+        404: {"description": "Car not found"},
+        422: {"description": "Query parameter validation error"}
     }
 )
 def insurance_valid(

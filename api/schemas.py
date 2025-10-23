@@ -102,6 +102,9 @@ class InsuranceValidityResponse(CamelModel):
 	date: str
 	valid: bool
 
+class HealthRead(CamelModel):
+    status: str
+
 class ClaimRead(CamelModel):
 	id: int
 	car_id: int
