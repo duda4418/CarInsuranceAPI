@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
+from pydantic import field_validator
 from core.config import CamelModel
 
 
@@ -48,6 +49,15 @@ class InsurancePolicyCreate(CamelModel):
 	end_date: date
 	logged_expiry_at: Optional[datetime] = None
 
+	@field_validator("end_date")
+	def validate_end_date(cls, v: date, info):
+		start = info.data.get("start_date")
+		if start and v < start:
+			raise ValueError("endDate must be >= startDate")
+		if v.year < 1900 or v.year > 2100:
+			raise ValueError("endDate out of allowed range (1900-2100)")
+		return v
+
 class InsurancePolicyRead(CamelModel):
 	id: int
 	car_id: int
@@ -67,6 +77,30 @@ class ClaimCreate(CamelModel):
 	claim_date: date
 	description: str
 	amount: Decimal
+
+	@field_validator("amount")
+	def validate_amount(cls, v: Decimal):
+		if v <= 0:
+			raise ValueError("amount must be > 0")
+		return v
+
+	@field_validator("description")
+	def validate_description(cls, v: str):
+		if not v or not v.strip():
+			raise ValueError("description must not be empty")
+		return v
+
+	@field_validator("claim_date")
+	def validate_claim_date(cls, v: date):
+		if v.year < 1900 or v.year > 2100:
+			raise ValueError("claimDate out of allowed range (1900-2100)")
+		return v
+
+
+class InsuranceValidityResponse(CamelModel):
+	car_id: int
+	date: str
+	valid: bool
 
 class ClaimRead(CamelModel):
 	id: int

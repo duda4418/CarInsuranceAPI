@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
     SCHEDULER_INTERVAL_MINUTES: int = 10
+    SCHEDULER_ENABLED: bool = True
+    SCHEDULER_TIMEZONE: str = "UTC"
+    LOG_LEVEL: str | None = None
+    # POLICY_DATE_MODE: str = "date_only"  
+    REDIS_LOCK_KEY: str = "policy-expiry-lock"
+    REDIS_LOCK_TTL_SECONDS: int = 60
 
     @property
     def DATABASE_URL(self) -> str:

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, status, Depends, HTTPException, Response
+from fastapi import APIRouter, status, Depends, Response
 from sqlalchemy.orm import Session
 from typing import List
 
 from db.models import InsurancePolicy, Car
 from api.schemas import InsurancePolicyCreate, InsurancePolicyRead
 from db.session import get_db
+from services.exceptions import NotFoundError, ValidationError
 from core.logging import get_logger
 
 log = get_logger()
@@ -33,10 +34,8 @@ def list_policies(db: Session = Depends(get_db)):
 )
 def get_policy(policy_id: int, db: Session = Depends(get_db)):
 	policy = db.query(InsurancePolicy).filter(InsurancePolicy.id == policy_id).first()
-
 	if not policy:
-		raise HTTPException(status_code=404, detail="Policy not found")
-
+		raise NotFoundError("Policy", policy_id)
 	return policy
 
 
@@ -52,13 +51,9 @@ def get_policy(policy_id: int, db: Session = Depends(get_db)):
 )
 def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db), response: Response = None):
 	car = db.query(Car).filter(Car.id == payload.car_id).first()
-
 	if not car:
-		raise HTTPException(status_code=404, detail="Car not found")
-
-	if payload.end_date is None or payload.end_date < payload.start_date:
-		raise HTTPException(status_code=400, detail="end_date must be present and >= start_date")
-
+		raise NotFoundError("Car", payload.car_id)
+	# Date ordering & range now enforced by Pydantic validators; no manual check needed.
 	policy = InsurancePolicy(
 		car_id=payload.car_id,
 		provider=payload.provider,
@@ -69,7 +64,6 @@ def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db),
 	db.add(policy)
 	db.commit()
 	db.refresh(policy)
-
 	if response is not None:
 		response.headers["Location"] = f"/api/policies/{policy.id}"
 	log.info("policy_created", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
@@ -88,20 +82,13 @@ def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db),
 )
 def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = Depends(get_db)):
 	policy = db.query(InsurancePolicy).filter(InsurancePolicy.id == policy_id).first()
-
 	if not policy:
-		raise HTTPException(status_code=404, detail="Policy not found")
-
-	# validate dates
-	if payload.end_date is None or payload.end_date < payload.start_date:
-		raise HTTPException(status_code=400, detail="end_date must be present and >= start_date")
-
-	# ensure car exists if car_id changed
+		raise NotFoundError("Policy", policy_id)
+	# Pydantic validators handle date logic.
 	if payload.car_id != policy.car_id:
 		car = db.query(Car).filter(Car.id == payload.car_id).first()
 		if not car:
-			raise HTTPException(status_code=404, detail="New car not found")
-
+			raise NotFoundError("Car", payload.car_id)
 	policy.car_id = payload.car_id
 	policy.provider = payload.provider
 	policy.start_date = payload.start_date
@@ -123,10 +110,8 @@ def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = 
 )
 def delete_policy(policy_id: int, db: Session = Depends(get_db)):
 	policy = db.query(InsurancePolicy).filter(InsurancePolicy.id == policy_id).first()
-
 	if not policy:
-		raise HTTPException(status_code=404, detail="Policy not found")
-
+		raise NotFoundError("Policy", policy_id)
 	db.delete(policy)
 	db.commit()
 	log.info("policy_deleted", policyId=policy.id, carId=policy.car_id)

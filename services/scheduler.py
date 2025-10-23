@@ -15,8 +15,8 @@ from services.policy_service import (
 
 log = structlog.get_logger()
 
-LOCK_KEY = "policy-expiry-lock"
-LOCK_TTL_SECONDS = 60  # Prevent overlapping runs within a minute
+LOCK_KEY = settings.REDIS_LOCK_KEY
+LOCK_TTL_SECONDS = settings.REDIS_LOCK_TTL_SECONDS  # Prevent overlapping runs within a minute
 
 
 def _run_policy_expiry_job():
@@ -55,7 +55,10 @@ def start_scheduler() -> None:
     global _scheduler
     if _scheduler is not None:
         return
-    _scheduler = BackgroundScheduler(timezone="UTC")
+    if not settings.SCHEDULER_ENABLED:
+        log.info("scheduler_disabled")
+        return
+    _scheduler = BackgroundScheduler(timezone=settings.SCHEDULER_TIMEZONE)
     _scheduler.add_job(
         _run_policy_expiry_job,
         "interval",

@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from core.logging import configure_logging
 from services.scheduler import start_scheduler, stop_scheduler
+from api.routers.errors import register_exception_handlers
 
 from api.routers.cars import cars_router
 from api.routers.claims import claims_router
@@ -27,6 +28,8 @@ app.include_router(cars_router, prefix="/api")
 app.include_router(policies_router, prefix="/api")
 app.include_router(claims_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
+
+register_exception_handlers(app)
 
 if __name__ == "__main__":
     import uvicorn

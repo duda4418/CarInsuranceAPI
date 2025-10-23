@@ -11,12 +11,6 @@ def create_claim(db: Session, car_id: int, data: ClaimCreate) -> Claim:
     if not car:
         raise NotFoundError("Car", car_id)
 
-    if not data.description or not data.description.strip():
-        raise ValidationError("Description must not be empty")
-
-    if data.amount is None or data.amount <= 0:
-        raise ValidationError("Amount must be greater than 0")
-
     claim = Claim(
         car_id=car_id,
         claim_date=data.claim_date,
@@ -31,12 +25,6 @@ def create_claim(db: Session, car_id: int, data: ClaimCreate) -> Claim:
 
 
 def update_claim(db: Session, claim: Claim, data: ClaimCreate) -> Claim:
-    if not data.description or not data.description.strip():
-        raise ValidationError("Description must not be empty")
-
-    if data.amount is None or data.amount <= 0:
-        raise ValidationError("Amount must be greater than 0")
-
     if data.car_id != claim.car_id:
         car = db.query(Car).filter(Car.id == data.car_id).first()
         if not car:

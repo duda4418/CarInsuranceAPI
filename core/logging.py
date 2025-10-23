@@ -6,17 +6,13 @@ Features:
  - DEBUG level in local/dev; INFO elsewhere (override with LOG_LEVEL env var).
  - ContextVars support for request correlation (request_id).
 """
-import os
 import logging
 import structlog
 from core.settings import settings
 
 
 def configure_logging() -> None:
-    desired_level = os.getenv(
-        "LOG_LEVEL",
-        "DEBUG" if settings.APP_ENV in ("local", "dev") else "INFO",
-    ).upper()
+    desired_level = (settings.LOG_LEVEL or ("DEBUG" if settings.APP_ENV in ("local", "dev") else "INFO")).upper()
     level = getattr(logging, desired_level, logging.INFO)
 
     logging.basicConfig(level=level, format="%(message)s")

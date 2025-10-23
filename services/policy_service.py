@@ -13,9 +13,6 @@ def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate) -> Insu
     if not car:
         raise NotFoundError("Car", car_id)
 
-    if data.end_date is None or data.end_date < data.start_date:
-        raise ValidationError("end_date must be present and >= start_date")
-
     policy = InsurancePolicy(
         car_id=car_id,
         provider=data.provider,
@@ -31,9 +28,6 @@ def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate) -> Insu
 
 
 def update_policy(db: Session, policy: InsurancePolicy, data: InsurancePolicyCreate) -> InsurancePolicy:
-    if data.end_date is None or data.end_date < data.start_date:
-        raise ValidationError("end_date must be present and >= start_date")
-
     # Car reassignment
     if data.car_id != policy.car_id:
         car = db.query(Car).filter(Car.id == data.car_id).first()

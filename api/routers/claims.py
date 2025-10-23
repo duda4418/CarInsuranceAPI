@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Response
+from fastapi import APIRouter, Depends, status, Response
 from sqlalchemy.orm import Session
 from typing import List
 
 from api.schemas import ClaimCreate, ClaimRead
 from db.session import get_db
+from services.exceptions import NotFoundError, ValidationError
 from db.models import Car, Claim
 from core.logging import get_logger
 
@@ -33,10 +34,8 @@ def list_claims(db: Session = Depends(get_db)):
 )
 def get_claim(claim_id: int, db: Session = Depends(get_db)):
 	claim = db.query(Claim).filter(Claim.id == claim_id).first()
-
 	if not claim:
-		raise HTTPException(status_code=404, detail="Claim not found")
-
+		raise NotFoundError("Claim", claim_id)
 	return claim
 
 
@@ -52,16 +51,9 @@ def get_claim(claim_id: int, db: Session = Depends(get_db)):
 )
 def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
 	car = db.query(Car).filter(Car.id == payload.car_id).first()
-
 	if not car:
-		raise HTTPException(status_code=404, detail="Car not found")
-
-	if not payload.description or not payload.description.strip():
-		raise HTTPException(status_code=400, detail="Description must not be empty")
-
-	if payload.amount is None or payload.amount <= 0:
-		raise HTTPException(status_code=400, detail="Amount must be greater than 0")
-
+		raise NotFoundError("Car", payload.car_id)
+	# Pydantic validators enforce description/amount rules.
 	claim = Claim(
 		car_id=payload.car_id,
 		claim_date=payload.claim_date,
@@ -71,7 +63,6 @@ def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: 
 	db.add(claim)
 	db.commit()
 	db.refresh(claim)
-
 	if response is not None:
 		response.headers["Location"] = f"/api/claims/{claim.id}"
 	log.info("claim_created", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
@@ -90,24 +81,13 @@ def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: 
 )
 def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_db)):
 	claim = db.query(Claim).filter(Claim.id == claim_id).first()
-
 	if not claim:
-		raise HTTPException(status_code=404, detail="Claim not found")
-
-	# validations
-	if not payload.description or not payload.description.strip():
-		raise HTTPException(status_code=400, detail="Description must not be empty")
-
-	if payload.amount is None or payload.amount <= 0:
-		raise HTTPException(status_code=400, detail="Amount must be greater than 0")
-
-	# car change
+		raise NotFoundError("Claim", claim_id)
 	if payload.car_id != claim.car_id:
 		car = db.query(Car).filter(Car.id == payload.car_id).first()
 		if not car:
-			raise HTTPException(status_code=404, detail="New car not found")
+			raise NotFoundError("Car", payload.car_id)
 		claim.car_id = payload.car_id
-
 	claim.claim_date = payload.claim_date
 	claim.description = payload.description
 	claim.amount = payload.amount
@@ -127,10 +107,8 @@ def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_
 )
 def delete_claim(claim_id: int, db: Session = Depends(get_db)):
 	claim = db.query(Claim).filter(Claim.id == claim_id).first()
-
 	if not claim:
-		raise HTTPException(status_code=404, detail="Claim not found")
-
+		raise NotFoundError("Claim", claim_id)
 	db.delete(claim)
 	db.commit()
 	log.info("claim_deleted", claimId=claim.id, carId=claim.car_id)

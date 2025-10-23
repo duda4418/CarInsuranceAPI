@@ -2,12 +2,12 @@
 from typing import Dict, Any, List
 from datetime import datetime
 # --- Third Party Imports ---
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
+from fastapi import APIRouter, Depends, status, Query, Response
 from sqlalchemy.orm import Session, joinedload
 # --- Project Imports ---
 from db.models import Car, InsurancePolicy, Claim
 from db.session import get_db
-from api.schemas import CarRead, CarCreate, InsurancePolicyCreate, InsurancePolicyRead, ClaimCreate, ClaimRead
+from api.schemas import CarRead, CarCreate, InsurancePolicyCreate, InsurancePolicyRead, ClaimCreate, ClaimRead, InsuranceValidityResponse
 
 from services.policy_service import create_policy as svc_create_policy
 from services.claim_service import create_claim as svc_create_claim
@@ -44,10 +44,8 @@ def list_cars(db: Session = Depends(get_db)):
 )
 def get_car(car_id: int, db: Session = Depends(get_db)):
     car = (db.query(Car).options(joinedload(Car.owner)).filter(Car.id == car_id).first())
-
     if not car:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
-
+        raise NotFoundError("Car", car_id)
     return car
 
 
@@ -81,15 +79,12 @@ def create_car(car: CarCreate, db: Session = Depends(get_db), response: Response
 )
 def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
     db_car = db.query(Car).filter(Car.id == car_id).first()
-
     if not db_car:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
-
+        raise NotFoundError("Car", car_id)
     for key, value in car.dict().items():
         setattr(db_car, key, value)
     db.commit()
     db.refresh(db_car)
-
     return db_car
 
 
@@ -103,13 +98,10 @@ def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
 )
 def delete_car(car_id: int, db: Session = Depends(get_db)):
     db_car = db.query(Car).filter(Car.id == car_id).first()
-
     if not db_car:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
-
+        raise NotFoundError("Car", car_id)
     db.delete(db_car)
     db.commit()
-
     return None
 
 
@@ -124,14 +116,9 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
     }
 )
 def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Session = Depends(get_db)):
-    try:
-        created = svc_create_policy(db, car_id, policy)
-        log.info("policy_created", policyId=created.id, carId=car_id, provider=created.provider)
-        return created
-    except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
-    except ValidationError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    created = svc_create_policy(db, car_id, policy)
+    log.info("policy_created", policyId=created.id, carId=car_id, provider=created.provider)
+    return created
 
 
 @cars_router.post(
@@ -145,13 +132,8 @@ def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Sessio
     }
 )
 def create_claims(car_id: int, claim: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
-    try:
-        created = svc_create_claim(db, car_id, claim)
-        log.info("claim_created", claimId=created.id, carId=car_id, amount=float(created.amount))
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail="Car not found")
-    except ValidationError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+    created = svc_create_claim(db, car_id, claim)
+    log.info("claim_created", claimId=created.id, carId=car_id, amount=float(created.amount))
     if response is not None:
         response.headers["Location"] = f"/api/cars/{car_id}/claims/{created.id}"
     return created
@@ -160,6 +142,7 @@ def create_claims(car_id: int, claim: ClaimCreate, db: Session = Depends(get_db)
 @cars_router.get(
     "/cars/{car_id}/insurance-valid",
     status_code=200,
+    response_model=InsuranceValidityResponse,
     responses={
         200: {"description": "Insurance validity for car and date"},
         400: {"description": "Invalid date format or out of range"},
@@ -171,13 +154,8 @@ def insurance_valid(
     date: str = Query(..., description="Date in YYYY-MM-DD format"),
     db: Session = Depends(get_db)
 ):
-    try:
-        valid = is_insurance_valid(db, car_id, date)
-        return {"carId": car_id, "date": date, "valid": valid}
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail="Car not found")
-    except ValidationError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+    valid = is_insurance_valid(db, car_id, date)
+    return InsuranceValidityResponse(car_id=car_id, date=date, valid=valid)
 
 
 @cars_router.get(
@@ -189,10 +167,7 @@ def insurance_valid(
     }
 )
 def car_history(car_id: int, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
-    try:
-        return get_car_history(db, car_id)
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail="Car not found")
+    return get_car_history(db, car_id)
 
 
 
