@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
-    SCHEDULER_INTERVAL_MINUTES: int = 10
+    SCHEDULER_INTERVAL_MINUTES: int = 1
     SCHEDULER_ENABLED: bool = True
     SCHEDULER_TIMEZONE: str = "UTC"
     LOG_LEVEL: str | None = None
