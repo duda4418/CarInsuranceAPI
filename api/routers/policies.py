@@ -5,8 +5,15 @@ from typing import List
 from db.models import InsurancePolicy, Car
 from api.schemas import InsurancePolicyCreate, InsurancePolicyRead
 from db.session import get_db
-from services.exceptions import NotFoundError, ValidationError
+from services.exceptions import NotFoundError
 from core.logging import get_logger
+from services.policy_service import (
+	list_policies as svc_list_policies,
+	get_policy_by_id as svc_get_policy_by_id,
+	create_policy as svc_create_policy,
+	update_policy as svc_update_policy,
+	delete_policy as svc_delete_policy,
+)
 
 log = get_logger()
 
@@ -23,7 +30,7 @@ policies_router = APIRouter()
 	}
 )
 def list_policies(db: Session = Depends(get_db)):
-	return db.query(InsurancePolicy).all()
+	return svc_list_policies(db)
 
 
 @policies_router.get(
@@ -37,7 +44,7 @@ def list_policies(db: Session = Depends(get_db)):
 	}
 )
 def get_policy(policy_id: int, db: Session = Depends(get_db)):
-	policy = db.query(InsurancePolicy).filter(InsurancePolicy.id == policy_id).first()
+	policy = svc_get_policy_by_id(db, policy_id)
 	if not policy:
 		raise NotFoundError("Policy", policy_id)
 	return policy
@@ -55,20 +62,7 @@ def get_policy(policy_id: int, db: Session = Depends(get_db)):
 	}
 )
 def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db), response: Response = None):
-	car = db.query(Car).filter(Car.id == payload.car_id).first()
-	if not car:
-		raise NotFoundError("Car", payload.car_id)
-	# Date ordering & range now enforced by Pydantic validators; no manual check needed.
-	policy = InsurancePolicy(
-		car_id=payload.car_id,
-		provider=payload.provider,
-		start_date=payload.start_date,
-		end_date=payload.end_date,
-		logged_expiry_at=payload.logged_expiry_at
-	)
-	db.add(policy)
-	db.commit()
-	db.refresh(policy)
+	policy = svc_create_policy(db, payload.car_id, payload)
 	if response is not None:
 		response.headers["Location"] = f"/api/policies/{policy.id}"
 	log.info("policy_created", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
@@ -86,23 +80,12 @@ def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db),
 	}
 )
 def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = Depends(get_db)):
-	policy = db.query(InsurancePolicy).filter(InsurancePolicy.id == policy_id).first()
+	policy = svc_get_policy_by_id(db, policy_id)
 	if not policy:
 		raise NotFoundError("Policy", policy_id)
-	# Pydantic validators handle date logic.
-	if payload.car_id != policy.car_id:
-		car = db.query(Car).filter(Car.id == payload.car_id).first()
-		if not car:
-			raise NotFoundError("Car", payload.car_id)
-	policy.car_id = payload.car_id
-	policy.provider = payload.provider
-	policy.start_date = payload.start_date
-	policy.end_date = payload.end_date
-	policy.logged_expiry_at = payload.logged_expiry_at
-	db.commit()
-	db.refresh(policy)
-	log.info("policy_updated", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
-	return policy
+	updated = svc_update_policy(db, policy, payload)
+	log.info("policy_updated", policyId=updated.id, carId=updated.car_id, provider=updated.provider)
+	return updated
 
 
 @policies_router.delete(
@@ -115,10 +98,9 @@ def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = 
 	}
 )
 def delete_policy(policy_id: int, db: Session = Depends(get_db)):
-	policy = db.query(InsurancePolicy).filter(InsurancePolicy.id == policy_id).first()
+	policy = svc_get_policy_by_id(db, policy_id)
 	if not policy:
 		raise NotFoundError("Policy", policy_id)
-	db.delete(policy)
-	db.commit()
+	svc_delete_policy(db, policy)
 	log.info("policy_deleted", policyId=policy.id, carId=policy.car_id)
 	return None

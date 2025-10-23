@@ -1,0 +1,70 @@
+"""Car service: encapsulates Car CRUD and nested resource creation orchestration."""
+from sqlalchemy.orm import Session, joinedload
+from db.models import Car, Owner
+from services.exceptions import NotFoundError, ValidationError
+from api.schemas import CarCreate
+
+
+def list_cars(db: Session) -> list[Car]:
+    return db.query(Car).options(joinedload(Car.owner)).all()
+
+
+def get_car(db: Session, car_id: int) -> Car:
+    car = db.query(Car).options(joinedload(Car.owner)).filter(Car.id == car_id).first()
+    if not car:
+        raise NotFoundError("Car", car_id)
+    return car
+
+
+def create_car(db: Session, data: CarCreate) -> Car:
+    owner = db.query(Owner).filter(Owner.id == data.owner_id).first()
+    if not owner:
+        raise NotFoundError("Owner", data.owner_id)
+    existing = db.query(Car).filter(Car.vin == data.vin).first()
+    if existing:
+        raise ValidationError(f"VIN '{data.vin}' already exists")
+    car = Car(**data.model_dump())
+    db.add(car)
+    try:
+        db.commit()
+    except Exception as e:
+        from sqlalchemy.exc import IntegrityError
+        db.rollback()
+        if isinstance(e, IntegrityError):
+            raise ValidationError(f"VIN '{data.vin}' already exists")
+        raise
+    db.refresh(car)
+    return car
+
+
+def update_car(db: Session, car_id: int, data: CarCreate) -> Car:
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise NotFoundError("Car", car_id)
+    owner = db.query(Owner).filter(Owner.id == data.owner_id).first()
+    if not owner:
+        raise NotFoundError("Owner", data.owner_id)
+    if data.vin != car.vin:
+        existing_vin = db.query(Car).filter(Car.vin == data.vin).first()
+        if existing_vin:
+            raise ValidationError(f"VIN '{data.vin}' already exists")
+    for key, value in data.model_dump().items():
+        setattr(car, key, value)
+    try:
+        db.commit()
+    except Exception as e:
+        from sqlalchemy.exc import IntegrityError
+        db.rollback()
+        if isinstance(e, IntegrityError):
+            raise ValidationError("Update violates data integrity constraints")
+        raise
+    db.refresh(car)
+    return car
+
+
+def delete_car(db: Session, car_id: int) -> None:
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise NotFoundError("Car", car_id)
+    db.delete(car)
+    db.commit()

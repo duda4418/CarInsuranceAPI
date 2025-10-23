@@ -9,6 +9,13 @@ from db.models import Car, InsurancePolicy, Claim, Owner
 from db.session import get_db
 from api.schemas import CarRead, CarCreate, InsurancePolicyCreate, InsurancePolicyRead, ClaimCreate, ClaimRead, InsuranceValidityResponse
 
+from services.car_service import (
+    list_cars as svc_list_cars,
+    get_car as svc_get_car,
+    create_car as svc_create_car,
+    update_car as svc_update_car,
+    delete_car as svc_delete_car,
+)
 from services.policy_service import create_policy as svc_create_policy
 from services.claim_service import create_claim as svc_create_claim
 from services.validity_service import is_insurance_valid
@@ -31,9 +38,7 @@ cars_router = APIRouter()
     }
 )
 def list_cars(db: Session = Depends(get_db)):
-    car_list = db.query(Car).options(joinedload(Car.owner)).all()
-
-    return car_list
+    return svc_list_cars(db)
 
 
 @cars_router.get(
@@ -47,10 +52,7 @@ def list_cars(db: Session = Depends(get_db)):
     }
 )
 def get_car(car_id: int, db: Session = Depends(get_db)):
-    car = (db.query(Car).options(joinedload(Car.owner)).filter(Car.id == car_id).first())
-    if not car:
-        raise NotFoundError("Car", car_id)
-    return car
+    return svc_get_car(db, car_id)
 
 
 @cars_router.post(
@@ -65,36 +67,10 @@ def get_car(car_id: int, db: Session = Depends(get_db)):
     }
 )
 def create_car(car: CarCreate, db: Session = Depends(get_db), response: Response = None):
-    """Create a car ensuring owner exists and VIN is unique.
-
-    Returns 400 (DomainValidationError) if VIN already exists or owner is missing.
-    """
-    # Ensure owner exists early
-    owner = db.query(Owner).filter(Owner.id == car.owner_id).first()
-    if not owner:
-        raise NotFoundError("Owner", car.owner_id)
-
-    # Pre-flight VIN uniqueness check to return a clean validation error instead of 500
-    existing = db.query(Car).filter(Car.vin == car.vin).first()
-    if existing:
-        raise ValidationError(f"VIN '{car.vin}' already exists")
-
-    db_car = Car(**car.model_dump())  # model_dump preferred over dict() in Pydantic v2
-    db.add(db_car)
-    try:
-        db.commit()
-    except Exception as e:  # Fallback in case of race condition (duplicate VIN inserted concurrently)
-        from sqlalchemy.exc import IntegrityError
-        db.rollback()
-        if isinstance(e, IntegrityError):
-            raise ValidationError(f"VIN '{car.vin}' already exists")
-        raise
-    db.refresh(db_car)
-
+    created = svc_create_car(db, car)
     if response is not None:
-        response.headers["Location"] = f"/api/cars/{db_car.id}"
-
-    return db_car
+        response.headers["Location"] = f"/api/cars/{created.id}"
+    return created
 
 
 @cars_router.put(
@@ -108,14 +84,7 @@ def create_car(car: CarCreate, db: Session = Depends(get_db), response: Response
     }
 )
 def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
-    db_car = db.query(Car).filter(Car.id == car_id).first()
-    if not db_car:
-        raise NotFoundError("Car", car_id)
-    for key, value in car.dict().items():
-        setattr(db_car, key, value)
-    db.commit()
-    db.refresh(db_car)
-    return db_car
+    return svc_update_car(db, car_id, car)
 
 
 @cars_router.delete(
@@ -128,11 +97,7 @@ def update_car(car_id: int, car: CarCreate, db: Session = Depends(get_db)):
     }
 )
 def delete_car(car_id: int, db: Session = Depends(get_db)):
-    db_car = db.query(Car).filter(Car.id == car_id).first()
-    if not db_car:
-        raise NotFoundError("Car", car_id)
-    db.delete(db_car)
-    db.commit()
+    svc_delete_car(db, car_id)
     return None
 
 

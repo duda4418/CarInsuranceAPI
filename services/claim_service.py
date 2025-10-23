@@ -41,3 +41,12 @@ def update_claim(db: Session, claim: Claim, data: ClaimCreate) -> Claim:
 
 def get_claim_by_id(db: Session, claim_id: int) -> Claim | None:
     return db.query(Claim).filter(Claim.id == claim_id).first()
+
+
+def list_claims(db: Session) -> list[Claim]:
+    return db.query(Claim).all()
+
+
+def delete_claim(db: Session, claim: Claim) -> None:
+    db.delete(claim)
+    db.commit()

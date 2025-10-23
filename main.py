@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+import warnings
 
 from core.logging import configure_logging
 from services.scheduler import start_scheduler, stop_scheduler
@@ -11,6 +12,12 @@ from api.routers.health import health_router
 from api.routers.history import history_router
 from api.routers.policies import policies_router
 
+# Fallback broad suppression by module name where the warning originates (internal schema generation).
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    module="pydantic._internal._generate_schema"
+)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup

@@ -4,8 +4,15 @@ from typing import List
 
 from api.schemas import ClaimCreate, ClaimRead
 from db.session import get_db
-from services.exceptions import NotFoundError, ValidationError
-from db.models import Car, Claim
+from services.exceptions import NotFoundError
+from db.models import Claim
+from services.claim_service import (
+	list_claims as svc_list_claims,
+	get_claim_by_id as svc_get_claim_by_id,
+	create_claim as svc_create_claim,
+	update_claim as svc_update_claim,
+	delete_claim as svc_delete_claim,
+)
 from core.logging import get_logger
 
 log = get_logger()
@@ -23,7 +30,7 @@ claims_router = APIRouter()
 	}
 )
 def list_claims(db: Session = Depends(get_db)):
-	return db.query(Claim).all()
+	return svc_list_claims(db)
 
 
 @claims_router.get(
@@ -37,7 +44,7 @@ def list_claims(db: Session = Depends(get_db)):
 	}
 )
 def get_claim(claim_id: int, db: Session = Depends(get_db)):
-	claim = db.query(Claim).filter(Claim.id == claim_id).first()
+	claim = svc_get_claim_by_id(db, claim_id)
 	if not claim:
 		raise NotFoundError("Claim", claim_id)
 	return claim
@@ -55,19 +62,7 @@ def get_claim(claim_id: int, db: Session = Depends(get_db)):
 	}
 )
 def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
-	car = db.query(Car).filter(Car.id == payload.car_id).first()
-	if not car:
-		raise NotFoundError("Car", payload.car_id)
-	# Pydantic validators enforce description/amount rules.
-	claim = Claim(
-		car_id=payload.car_id,
-		claim_date=payload.claim_date,
-		description=payload.description,
-		amount=payload.amount
-	)
-	db.add(claim)
-	db.commit()
-	db.refresh(claim)
+	claim = svc_create_claim(db, payload.car_id, payload)
 	if response is not None:
 		response.headers["Location"] = f"/api/claims/{claim.id}"
 	log.info("claim_created", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
@@ -85,21 +80,12 @@ def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: 
 	}
 )
 def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_db)):
-	claim = db.query(Claim).filter(Claim.id == claim_id).first()
+	claim = svc_get_claim_by_id(db, claim_id)
 	if not claim:
 		raise NotFoundError("Claim", claim_id)
-	if payload.car_id != claim.car_id:
-		car = db.query(Car).filter(Car.id == payload.car_id).first()
-		if not car:
-			raise NotFoundError("Car", payload.car_id)
-		claim.car_id = payload.car_id
-	claim.claim_date = payload.claim_date
-	claim.description = payload.description
-	claim.amount = payload.amount
-	db.commit()
-	db.refresh(claim)
-	log.info("claim_updated", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
-	return claim
+	updated = svc_update_claim(db, claim, payload)
+	log.info("claim_updated", claimId=updated.id, carId=updated.car_id, amount=float(updated.amount))
+	return updated
 
 
 @claims_router.delete(
@@ -112,11 +98,10 @@ def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_
 	}
 )
 def delete_claim(claim_id: int, db: Session = Depends(get_db)):
-	claim = db.query(Claim).filter(Claim.id == claim_id).first()
+	claim = svc_get_claim_by_id(db, claim_id)
 	if not claim:
 		raise NotFoundError("Claim", claim_id)
-	db.delete(claim)
-	db.commit()
+	svc_delete_claim(db, claim)
 	log.info("claim_deleted", claimId=claim.id, carId=claim.car_id)
 	return None
 

@@ -70,3 +70,12 @@ def get_unlogged_expiring_policies(db: Session, target_date: date) -> list[Insur
 def mark_policy_logged(db: Session, policy: InsurancePolicy, logged_at: datetime) -> None:
     policy.logged_expiry_at = logged_at
     db.add(policy)
+
+
+def list_policies(db: Session) -> list[InsurancePolicy]:
+    return db.query(InsurancePolicy).all()
+
+
+def delete_policy(db: Session, policy: InsurancePolicy) -> None:
+    db.delete(policy)
+    db.commit()
