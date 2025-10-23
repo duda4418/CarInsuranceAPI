@@ -5,6 +5,9 @@ from typing import List
 from db.models import InsurancePolicy, Car
 from api.schemas import InsurancePolicyCreate, InsurancePolicyRead
 from db.session import get_db
+from core.logging import get_logger
+
+log = get_logger()
 
 policies_router = APIRouter()
 
@@ -69,7 +72,7 @@ def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db),
 
 	if response is not None:
 		response.headers["Location"] = f"/api/policies/{policy.id}"
-
+	log.info("policy_created", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
 	return policy
 
 
@@ -106,7 +109,7 @@ def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = 
 	policy.logged_expiry_at = payload.logged_expiry_at
 	db.commit()
 	db.refresh(policy)
-
+	log.info("policy_updated", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
 	return policy
 
 
@@ -126,5 +129,5 @@ def delete_policy(policy_id: int, db: Session = Depends(get_db)):
 
 	db.delete(policy)
 	db.commit()
-
+	log.info("policy_deleted", policyId=policy.id, carId=policy.car_id)
 	return None

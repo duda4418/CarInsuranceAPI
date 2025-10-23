@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from db.models import InsurancePolicy, Car
 from services.exceptions import NotFoundError, ValidationError
 from api.schemas import InsurancePolicyCreate
+from datetime import datetime, date
 
 
 def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate) -> InsurancePolicy:
@@ -63,3 +64,15 @@ def get_active_policy(db: Session, car_id: int, on_date: date) -> InsurancePolic
         InsurancePolicy.start_date <= on_date,
         InsurancePolicy.end_date >= on_date
     ).first()
+
+
+def get_unlogged_expiring_policies(db: Session, target_date: date) -> list[InsurancePolicy]:
+    """Return policies whose end_date equals target_date and logged_expiry_at is NULL."""
+    return db.query(InsurancePolicy).filter(
+        InsurancePolicy.end_date == target_date,
+        InsurancePolicy.logged_expiry_at.is_(None)
+    ).all()
+
+def mark_policy_logged(db: Session, policy: InsurancePolicy, logged_at: datetime) -> None:
+    policy.logged_expiry_at = logged_at
+    db.add(policy)

@@ -14,6 +14,9 @@ from services.claim_service import create_claim as svc_create_claim
 from services.validity_service import is_insurance_valid
 from services.history_service import get_car_history
 from services.exceptions import NotFoundError, ValidationError
+from core.logging import get_logger
+
+log = get_logger()
 
 
 cars_router = APIRouter()
@@ -122,7 +125,9 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
 )
 def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Session = Depends(get_db)):
     try:
-        return svc_create_policy(db, car_id, policy)
+        created = svc_create_policy(db, car_id, policy)
+        log.info("policy_created", policyId=created.id, carId=car_id, provider=created.provider)
+        return created
     except NotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     except ValidationError as ve:
@@ -142,6 +147,7 @@ def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Sessio
 def create_claims(car_id: int, claim: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
     try:
         created = svc_create_claim(db, car_id, claim)
+        log.info("claim_created", claimId=created.id, carId=car_id, amount=float(created.amount))
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Car not found")
     except ValidationError as ve:

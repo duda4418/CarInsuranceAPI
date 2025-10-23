@@ -5,3 +5,6 @@ psycopg2-binary==2.9.9
 alembic==1.13.2
 python-dotenv==1.0.1
 Faker==25.2.0
+APScheduler==3.10.4
+redis==5.0.4
+structlog==24.1.0

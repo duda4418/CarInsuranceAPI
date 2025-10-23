@@ -5,6 +5,9 @@ from typing import List
 from api.schemas import ClaimCreate, ClaimRead
 from db.session import get_db
 from db.models import Car, Claim
+from core.logging import get_logger
+
+log = get_logger()
 
 claims_router = APIRouter()
 
@@ -71,7 +74,7 @@ def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: 
 
 	if response is not None:
 		response.headers["Location"] = f"/api/claims/{claim.id}"
-
+	log.info("claim_created", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
 	return claim
 
 
@@ -110,7 +113,7 @@ def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_
 	claim.amount = payload.amount
 	db.commit()
 	db.refresh(claim)
-
+	log.info("claim_updated", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
 	return claim
 
 
@@ -130,6 +133,6 @@ def delete_claim(claim_id: int, db: Session = Depends(get_db)):
 
 	db.delete(claim)
 	db.commit()
-
+	log.info("claim_deleted", claimId=claim.id, carId=claim.car_id)
 	return None
 
