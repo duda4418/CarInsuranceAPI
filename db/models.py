@@ -3,8 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 from sqlalchemy import (
-    String, Integer, Date, DateTime, Numeric, ForeignKey, Text,
-    Index, func
+    String, Integer, Date, DateTime, Numeric, ForeignKey, Text, func
 )
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column, relationship

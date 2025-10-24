@@ -1,7 +1,9 @@
 from fastapi import APIRouter, status
 from api.schemas import HealthRead
 
+
 health_router = APIRouter()
+
 
 @health_router.get(
     "/health",

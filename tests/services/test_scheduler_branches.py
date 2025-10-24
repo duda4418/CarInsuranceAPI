@@ -6,14 +6,12 @@ from tests.utils.factories import create_car
 
 
 def test_scheduler_lock_fail(db_session):
-    # If lock acquisition fails, job returns early (no commit, no changes)
     with patch("services.scheduler.acquire_lock", return_value=False):
-        _run_policy_expiry_job()  # Should do nothing
-    # Nothing to assert besides no exception; optionally check no policies added
+        _run_policy_expiry_job()
+    # Nothing to assert besides no exception
 
 
 def test_scheduler_empty_expiring_list(db_session):
-    # Lock succeeds but there are no policies expiring today -> early return
     with patch("services.scheduler.acquire_lock", return_value=True), \
         patch("services.scheduler.release_lock", return_value=None), \
         patch("services.scheduler.get_db", return_value=iter([db_session])):

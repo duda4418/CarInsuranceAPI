@@ -29,7 +29,6 @@ def create_claim(db: Session, car_id: int, data: ClaimCreate | ClaimCreateNested
 
 
 def update_claim(db: Session, claim: Claim, data: ClaimCreate) -> Claim:
-    # No car reassignment for nested endpoints; car_id comes from path
     claim.claim_date = data.claim_date
     claim.description = data.description
     claim.amount = data.amount

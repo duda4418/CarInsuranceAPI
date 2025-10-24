@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Ensure project root is on sys.path so 'main' and other top-level modules resolve.
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -16,8 +15,8 @@ from main import create_app  # noqa: E402
 from db.base import Base  # noqa: E402
 from db.session import get_db  # noqa: E402
 
-# In-memory SQLite for fast tests; adjust if you need parity with production.
-# Using StaticPool keeps the same connection for the lifespan of tests (so data persists across requests).
+# In-memory SQLite for fast tests
+# StaticPool keeps the same connection for the lifespan of tests so data persists across requests
 SQLALCHEMY_DATABASE_URL = "sqlite://"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -56,7 +55,6 @@ def client() -> Generator[TestClient, None, None]:
 
 @pytest.fixture()
 def db_session() -> Generator:
-    # Provide a fresh session per test for isolation if desired
     yield from override_get_db()
 
 

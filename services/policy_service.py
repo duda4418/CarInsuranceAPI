@@ -31,7 +31,6 @@ def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate | Insura
 
 
 def update_policy(db: Session, policy: InsurancePolicy, data: InsurancePolicyCreate) -> InsurancePolicy:
-    # No car reassignment for nested endpoints; car_id comes from path
     policy.provider = data.provider
     policy.start_date = data.start_date
     policy.end_date = data.end_date

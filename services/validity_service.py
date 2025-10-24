@@ -12,7 +12,6 @@ def is_insurance_valid(db: Session, car_id: int, on_date_str: str) -> bool:
     if not car:
         raise NotFoundError("Car", car_id)
 
-    # Date parsing & range validation
     try:
         year, month, day = map(int, on_date_str.split('-'))
         on_date = date(year, month, day)

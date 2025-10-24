@@ -42,8 +42,6 @@ class CarRead(CamelModel):
 
 
 # Insurance Policy Models
-
-
 # Used for top-level /api/policies endpoints (requires car_id)
 class InsurancePolicyCreate(CamelModel):
 	car_id: int
@@ -80,10 +78,13 @@ class InsurancePolicyRead(CamelModel):
 		'from_attributes': True,
 	}
 
+class InsuranceValidityResponse(CamelModel):
+	car_id: int
+	date: str
+	valid: bool
+
 
 # Claim Models
-
-
 # Used for top-level /api/claims endpoints (requires car_id)
 class ClaimCreate(CamelModel):
 	car_id: int
@@ -115,15 +116,6 @@ class ClaimCreateNested(CamelModel):
 			raise ValueError("claimDate out of allowed range (1900-2100)")
 		return v
 
-
-class InsuranceValidityResponse(CamelModel):
-	car_id: int
-	date: str
-	valid: bool
-
-class HealthRead(CamelModel):
-    status: str
-
 class ClaimRead(CamelModel):
 	id: int
 	car_id: int
@@ -135,4 +127,8 @@ class ClaimRead(CamelModel):
 		**CamelModel.model_config,
 		'from_attributes': True,
 	}
+
+
+class HealthRead(CamelModel):
+    status: str
 

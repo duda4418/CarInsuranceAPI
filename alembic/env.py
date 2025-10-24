@@ -8,7 +8,6 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from core.settings import settings
 from db.base import Base
 
-# Alembic Config object
 config = context.config
 
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

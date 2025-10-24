@@ -18,14 +18,14 @@ from services.policy_service import (
 log = get_logger()
 
 LOCK_KEY = settings.REDIS_LOCK_KEY
-LOCK_TTL_SECONDS = settings.REDIS_LOCK_TTL_SECONDS  # Prevent overlapping runs within a minute
+LOCK_TTL_SECONDS = settings.REDIS_LOCK_TTL_SECONDS
 
 
 def _run_policy_expiry_job():
     if not acquire_lock(LOCK_KEY, LOCK_TTL_SECONDS):
         # Another instance is running the job
         return
-    # Use dependency function to get a session
+
     session_generator = get_db()
     db: Session = next(session_generator)
     try:
@@ -37,14 +37,12 @@ def _run_policy_expiry_job():
         in_window = start <= now_local < end
         today = now_local.date()
 
-        # Fallback: if we are outside the window but nothing has been logged yet for today
-        # (e.g., scheduler started late), allow a single catch-up run.
+        # Fallback: if we are outside the window but nothing has been logged yet for today allow a single catch-up run.
         expiring = get_unlogged_expiring_policies(db, today)
         if not expiring:
             return
         if not in_window:
             # Check if any policy already has logged_expiry_at today (catch-up logic)
-            # If any are logged, skip; else proceed.
             already_logged = any(p.logged_expiry_at and p.logged_expiry_at.date() == today for p in expiring)
             if already_logged:
                 return

@@ -5,15 +5,13 @@ import warnings
 from core.logging import configure_logging, get_logger
 from core.settings import settings
 from services.scheduler import start_scheduler, stop_scheduler
-from api.routers.errors import register_exception_handlers
+from api.errors import register_exception_handlers
 
 from api.routers.cars import cars_router
 from api.routers.claims import claims_router
 from api.routers.health import health_router
-from api.routers.history import history_router
 from api.routers.policies import policies_router
 
-# Fallback broad suppression by module name where the warning originates (internal schema generation).
 warnings.filterwarnings(
     "ignore",
     category=UserWarning,
@@ -89,14 +87,11 @@ def create_app(*, enable_scheduler: bool = True, configure_logs: bool = True) ->
     app.include_router(cars_router, prefix="/api")
     app.include_router(policies_router, prefix="/api")
     app.include_router(claims_router, prefix="/api")
-    app.include_router(history_router, prefix="/api")
 
     register_exception_handlers(app)
     return app
 
 
-# Module-level app instance (production / default usage).
-# Always enable scheduler & logging here; tests should call create_app(...) explicitly.
 app = create_app(enable_scheduler=True, configure_logs=True)
 
 __all__ = ["create_app", "app"]

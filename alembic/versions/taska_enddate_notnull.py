@@ -11,14 +11,14 @@ import sqlalchemy as sa
 from sqlalchemy.sql import table, column
 from sqlalchemy import Date, func
 
-# revision identifiers, used by Alembic.
+# revision identifiers.
 revision = 'taska_enddate_notnull'
 down_revision = '379b63c92056'
 branch_labels = None
 depends_on = None
 
 def upgrade():
-    # 1. Data migration: set end_date where NULL
+    # set end_date where NULL
     insurance_policy = table('insurance_policy',
         column('id', sa.Integer),
         column('start_date', Date),
@@ -29,9 +29,9 @@ def upgrade():
         .where(insurance_policy.c.end_date == None)
         .values(end_date=func.DATE(sa.text('start_date + INTERVAL \'1 year\'')))
     )
-    # 2. Set end_date to NOT NULL
+    # end_date to NOT NULL
     op.alter_column('insurance_policy', 'end_date', nullable=False)
-    # 3. Add composite indexes
+    #composite indexes
     op.create_index('ix_insurance_policy_car_id_start_date_end_date', 'insurance_policy', ['car_id', 'start_date', 'end_date'], unique=False)
     op.create_index('ix_claim_car_id_claim_date', 'claim', ['car_id', 'claim_date'], unique=False)
 

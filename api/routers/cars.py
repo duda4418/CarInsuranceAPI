@@ -20,6 +20,7 @@ from services.history_service import get_car_history
 
 cars_router = APIRouter()
 
+
 @cars_router.get(
     "/cars",
     response_model=List[CarRead],

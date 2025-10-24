@@ -1,12 +1,8 @@
 from datetime import datetime
-from unittest.mock import patch, MagicMock
-from sqlalchemy.orm import Session
+from unittest.mock import patch
 from services.scheduler import _run_policy_expiry_job
 from db.models import InsurancePolicy
 from tests.utils.factories import create_car
-from core.settings import settings
-
-# Note: We are calling a 'private' function; acceptable in tests for internal behavior.
 
 
 def test_policy_expiry_job_marks_unlogged(db_session):
@@ -24,7 +20,6 @@ def test_policy_expiry_job_marks_unlogged(db_session):
     db_session.commit()
     db_session.refresh(policy)
 
-    # Patch lock acquisition to always succeed and release to no-op
     def fake_get_db():
         # Create an independent session sharing the same engine (StaticPool ensures same memory DB)
         from sqlalchemy.orm import sessionmaker

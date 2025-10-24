@@ -60,7 +60,6 @@ def create_car(session: Session, owner: models.Owner) -> models.Car:
 def create_policy(session: Session, car: models.Car) -> models.InsurancePolicy:
     today = date.today()
     start = today - timedelta(days=random.randint(0, 365))
-    # 50% chance it's active (end_date in future) else expired
     if random.random() < 0.5:
         end_date = start + timedelta(days=random.randint(30, 365))
         if end_date < today:

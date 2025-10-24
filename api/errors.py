@@ -6,8 +6,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from services.exceptions import NotFoundError, ValidationError as DomainValidationError
 
 # Centralized exception handler registration.
-# Usage: from api.routers.errors import register_exception_handlers; register_exception_handlers(app)
-
 def register_exception_handlers(app):
     @app.exception_handler(NotFoundError)
     async def not_found_handler(request: Request, exc: NotFoundError):

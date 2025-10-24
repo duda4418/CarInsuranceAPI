@@ -21,7 +21,6 @@ def test_create_policy_success(client, db_session):
     assert "Location" in resp.headers
     data = resp.json()
     assert data["provider"] == payload["provider"]
-    # Response JSON uses camelCase keys
     assert data["endDate"] == payload["end_date"]
 
 

@@ -1,7 +1,7 @@
 from db.models import Owner, Car
 import pytest
 
-# Helper to create an owner (since owner endpoints not shown)
+# Helper to create an owner
 
 def create_owner(db_session, name="Alice", email="alice@example.com"):
     owner = Owner(name=name, email=email)
@@ -40,7 +40,6 @@ def test_create_car_duplicate_vin(client, db_session):
     first = client.post("/api/cars", json=payload)
     assert first.status_code == 201
     second = client.post("/api/cars", json=payload)
-    # Domain validation error -> expect 400 mapped via exception handler
     assert second.status_code == 400
 
 
