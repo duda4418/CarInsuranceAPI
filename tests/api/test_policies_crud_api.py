@@ -25,7 +25,8 @@ def test_update_policy_success(client, db_session):
     assert upd.json()["startDate"] == "2025-02-01"
 
 
-def test_update_policy_reassign_car(client, db_session):
+
+def test_update_policy_car_id_immutable(client, db_session):
     car1 = create_car(db_session, vin="VPOLA1")
     car2 = create_car(db_session, vin="VPOLB2")
     payload = {
@@ -38,18 +39,19 @@ def test_update_policy_reassign_car(client, db_session):
     policy_id = create_resp.json()["id"]
 
     update_payload = {
-        "car_id": car2.id,
+        "car_id": car2.id,  # Should be ignored
         "provider": "ProviderA",
         "start_date": "2025-01-01",
         "end_date": "2025-12-31"
     }
     upd = client.put(f"/api/policies/{policy_id}", json=update_payload)
     assert upd.status_code == 200
-    # camelCase key in response
-    assert upd.json()["carId"] == car2.id
+    # carId should remain unchanged
+    assert upd.json()["carId"] == car1.id
 
 
-def test_update_policy_reassign_car_not_found(client, db_session):
+
+def test_update_policy_car_id_immutable_not_found(client, db_session):
     car = create_car(db_session, vin="VPOLNF1")
     payload = {
         "car_id": car.id,
@@ -61,13 +63,15 @@ def test_update_policy_reassign_car_not_found(client, db_session):
     policy_id = create_resp.json()["id"]
 
     update_payload = {
-        "car_id": 99999,
+        "car_id": 99999,  # Should be ignored
         "provider": "ProviderA",
         "start_date": "2025-01-01",
         "end_date": "2025-12-31"
     }
     upd = client.put(f"/api/policies/{policy_id}", json=update_payload)
-    assert upd.status_code == 404
+    assert upd.status_code == 200
+    # carId should remain unchanged
+    assert upd.json()["carId"] == car.id
 
 
 def test_delete_policy_success(client, db_session):

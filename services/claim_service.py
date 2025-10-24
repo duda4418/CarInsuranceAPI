@@ -2,13 +2,13 @@
 from sqlalchemy.orm import Session
 from db.models import Claim, Car
 from services.exceptions import NotFoundError, ValidationError
-from api.schemas import ClaimCreate
+from api.schemas import ClaimCreate, ClaimCreateNested
 from core.logging import get_logger
 
 log = get_logger()
 
 
-def create_claim(db: Session, car_id: int, data: ClaimCreate) -> Claim:
+def create_claim(db: Session, car_id: int, data: ClaimCreate | ClaimCreateNested) -> Claim:
     car = db.query(Car).filter(Car.id == car_id).first()
 
     if not car:
@@ -29,17 +29,12 @@ def create_claim(db: Session, car_id: int, data: ClaimCreate) -> Claim:
 
 
 def update_claim(db: Session, claim: Claim, data: ClaimCreate) -> Claim:
-    if data.car_id != claim.car_id:
-        car = db.query(Car).filter(Car.id == data.car_id).first()
-        if not car:
-            raise NotFoundError("Car", data.car_id)
-        claim.car_id = data.car_id
+    # No car reassignment for nested endpoints; car_id comes from path
     claim.claim_date = data.claim_date
     claim.description = data.description
     claim.amount = data.amount
     db.commit()
     db.refresh(claim)
-
     log.info("claim_updated", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
     return claim
 

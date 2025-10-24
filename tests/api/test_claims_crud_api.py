@@ -25,7 +25,8 @@ def test_update_claim_success(client, db_session):
     assert float(data["amount"]) == 180.0
 
 
-def test_update_claim_reassign_car(client, db_session):
+
+def test_update_claim_car_id_immutable(client, db_session):
     car1 = create_car(db_session, vin="VNCLMA")
     car2 = create_car(db_session, vin="VNCLMB")
     payload = {
@@ -38,18 +39,19 @@ def test_update_claim_reassign_car(client, db_session):
     claim_id = create_resp.json()["id"]
 
     update_payload = {
-        "car_id": car2.id,
+        "car_id": car2.id,  # Should be ignored
         "description": "Broken light",
         "amount": 60.0,
         "claim_date": "2025-03-01"
     }
     upd = client.put(f"/api/claims/{claim_id}", json=update_payload)
     assert upd.status_code == 200
-    # camelCase key in response
-    assert upd.json()["carId"] == car2.id
+    # carId should remain unchanged
+    assert upd.json()["carId"] == car1.id
 
 
-def test_update_claim_reassign_car_not_found(client, db_session):
+
+def test_update_claim_car_id_immutable_not_found(client, db_session):
     car = create_car(db_session, vin="VNCLMNF")
     payload = {
         "car_id": car.id,
@@ -61,13 +63,15 @@ def test_update_claim_reassign_car_not_found(client, db_session):
     claim_id = create_resp.json()["id"]
 
     update_payload = {
-        "car_id": 999999,
+        "car_id": 999999,  # Should be ignored
         "description": "Door dent",
         "amount": 220.0,
         "claim_date": "2025-04-01"
     }
     upd = client.put(f"/api/claims/{claim_id}", json=update_payload)
-    assert upd.status_code == 404
+    assert upd.status_code == 200
+    # carId should remain unchanged
+    assert upd.json()["carId"] == car.id
 
 
 def test_delete_claim_success(client, db_session):

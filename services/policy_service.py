@@ -3,13 +3,13 @@ from datetime import datetime, date
 from sqlalchemy.orm import Session
 from db.models import InsurancePolicy, Car
 from services.exceptions import NotFoundError, ValidationError
-from api.schemas import InsurancePolicyCreate
+from api.schemas import InsurancePolicyCreate, InsurancePolicyCreateNested
 from core.logging import get_logger
 
 log = get_logger()
 
 
-def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate) -> InsurancePolicy:
+def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate | InsurancePolicyCreateNested) -> InsurancePolicy:
     car = db.query(Car).filter(Car.id == car_id).first()
 
     if not car:
@@ -31,19 +31,13 @@ def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate) -> Insu
 
 
 def update_policy(db: Session, policy: InsurancePolicy, data: InsurancePolicyCreate) -> InsurancePolicy:
-    # Car reassignment
-    if data.car_id != policy.car_id:
-        car = db.query(Car).filter(Car.id == data.car_id).first()
-        if not car:
-            raise NotFoundError("Car", data.car_id)
-        policy.car_id = data.car_id
+    # No car reassignment for nested endpoints; car_id comes from path
     policy.provider = data.provider
     policy.start_date = data.start_date
     policy.end_date = data.end_date
     policy.logged_expiry_at = data.logged_expiry_at
     db.commit()
     db.refresh(policy)
-
     log.info("policy_updated", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
     return policy
 

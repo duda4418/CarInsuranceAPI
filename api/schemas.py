@@ -42,8 +42,18 @@ class CarRead(CamelModel):
 
 
 # Insurance Policy Models
+
+
+# Used for top-level /api/policies endpoints (requires car_id)
 class InsurancePolicyCreate(CamelModel):
 	car_id: int
+	provider: Optional[str] = None
+	start_date: date
+	end_date: date
+	logged_expiry_at: Optional[datetime] = None
+
+# Used for nested /cars/{car_id}/policies endpoints (no car_id in body)
+class InsurancePolicyCreateNested(CamelModel):
 	provider: Optional[str] = None
 	start_date: date
 	end_date: date
@@ -72,8 +82,17 @@ class InsurancePolicyRead(CamelModel):
 
 
 # Claim Models
+
+
+# Used for top-level /api/claims endpoints (requires car_id)
 class ClaimCreate(CamelModel):
 	car_id: int
+	claim_date: date
+	description: str
+	amount: Decimal
+
+# Used for nested /cars/{car_id}/claims endpoints (no car_id in body)
+class ClaimCreateNested(CamelModel):
 	claim_date: date
 	description: str
 	amount: Decimal

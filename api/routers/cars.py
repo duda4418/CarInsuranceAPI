@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status, Query, Response
 from sqlalchemy.orm import Session
 
 from db.session import get_db
-from api.schemas import CarRead, CarCreate, InsurancePolicyCreate, InsurancePolicyRead, ClaimCreate, ClaimRead, InsuranceValidityResponse
+from api.schemas import CarRead, CarCreate, InsurancePolicyCreate, InsurancePolicyCreateNested, InsurancePolicyRead, ClaimCreate, ClaimCreateNested, ClaimRead, InsuranceValidityResponse
 
 from services.car_service import (
     list_cars as svc_list_cars,
@@ -104,7 +104,7 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
         422: {"description": "Request body validation error"}
     }
 )
-def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Session = Depends(get_db), response: Response = None):
+def create_policy_for_car(car_id: int, policy: InsurancePolicyCreateNested, db: Session = Depends(get_db), response: Response = None):
     created = svc_create_policy(db, car_id, policy)
     if response is not None:
         response.headers["Location"] = f"/api/policies/{created.id}"
@@ -122,7 +122,7 @@ def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Sessio
         422: {"description": "Request body validation error"}
     }
 )
-def create_claims(car_id: int, claim: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
+def create_claims(car_id: int, claim: ClaimCreateNested, db: Session = Depends(get_db), response: Response = None):
     created = svc_create_claim(db, car_id, claim)
     if response is not None:
         response.headers["Location"] = f"/api/cars/{car_id}/claims/{created.id}"
