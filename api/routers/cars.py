@@ -1,11 +1,8 @@
-# --- Standard Library Imports ---
 from typing import Dict, Any, List
-from datetime import datetime
-# --- Third Party Imports ---
+
 from fastapi import APIRouter, Depends, status, Query, Response
-from sqlalchemy.orm import Session, joinedload
-# --- Project Imports ---
-from db.models import Car, InsurancePolicy, Claim, Owner
+from sqlalchemy.orm import Session
+
 from db.session import get_db
 from api.schemas import CarRead, CarCreate, InsurancePolicyCreate, InsurancePolicyRead, ClaimCreate, ClaimRead, InsuranceValidityResponse
 
@@ -20,11 +17,6 @@ from services.policy_service import create_policy as svc_create_policy
 from services.claim_service import create_claim as svc_create_claim
 from services.validity_service import is_insurance_valid
 from services.history_service import get_car_history
-from services.exceptions import NotFoundError, ValidationError
-from core.logging import get_logger
-
-log = get_logger()
-
 
 cars_router = APIRouter()
 
@@ -114,7 +106,6 @@ def delete_car(car_id: int, db: Session = Depends(get_db)):
 )
 def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Session = Depends(get_db), response: Response = None):
     created = svc_create_policy(db, car_id, policy)
-    log.info("policy_created", policyId=created.id, carId=car_id, provider=created.provider)
     if response is not None:
         response.headers["Location"] = f"/api/policies/{created.id}"
     return created
@@ -133,7 +124,6 @@ def create_policy_for_car(car_id: int, policy: InsurancePolicyCreate, db: Sessio
 )
 def create_claims(car_id: int, claim: ClaimCreate, db: Session = Depends(get_db), response: Response = None):
     created = svc_create_claim(db, car_id, claim)
-    log.info("claim_created", claimId=created.id, carId=car_id, amount=float(created.amount))
     if response is not None:
         response.headers["Location"] = f"/api/cars/{car_id}/claims/{created.id}"
     return created

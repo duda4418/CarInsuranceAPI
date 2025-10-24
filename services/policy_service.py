@@ -1,10 +1,12 @@
 """Policy service: creation, update, active policy queries."""
-from datetime import date
+from datetime import datetime, date
 from sqlalchemy.orm import Session
 from db.models import InsurancePolicy, Car
 from services.exceptions import NotFoundError, ValidationError
 from api.schemas import InsurancePolicyCreate
-from datetime import datetime, date
+from core.logging import get_logger
+
+log = get_logger()
 
 
 def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate) -> InsurancePolicy:
@@ -24,6 +26,7 @@ def create_policy(db: Session, car_id: int, data: InsurancePolicyCreate) -> Insu
     db.commit()
     db.refresh(policy)
 
+    log.info("policy_created", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
     return policy
 
 
@@ -41,6 +44,7 @@ def update_policy(db: Session, policy: InsurancePolicy, data: InsurancePolicyCre
     db.commit()
     db.refresh(policy)
 
+    log.info("policy_updated", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
     return policy
 
 
@@ -77,5 +81,8 @@ def list_policies(db: Session) -> list[InsurancePolicy]:
 
 
 def delete_policy(db: Session, policy: InsurancePolicy) -> None:
+    policy_id = policy.id
+    car_id = policy.car_id
     db.delete(policy)
     db.commit()
+    log.info("policy_deleted", policyId=policy_id, carId=car_id)

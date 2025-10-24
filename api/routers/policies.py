@@ -6,7 +6,6 @@ from db.models import InsurancePolicy, Car
 from api.schemas import InsurancePolicyCreate, InsurancePolicyRead
 from db.session import get_db
 from services.exceptions import NotFoundError
-from core.logging import get_logger
 from services.policy_service import (
 	list_policies as svc_list_policies,
 	get_policy_by_id as svc_get_policy_by_id,
@@ -15,7 +14,6 @@ from services.policy_service import (
 	delete_policy as svc_delete_policy,
 )
 
-log = get_logger()
 
 policies_router = APIRouter()
 
@@ -65,7 +63,6 @@ def create_policy(payload: InsurancePolicyCreate, db: Session = Depends(get_db),
 	policy = svc_create_policy(db, payload.car_id, payload)
 	if response is not None:
 		response.headers["Location"] = f"/api/policies/{policy.id}"
-	log.info("policy_created", policyId=policy.id, carId=policy.car_id, provider=policy.provider)
 	return policy
 
 
@@ -84,7 +81,6 @@ def update_policy(policy_id: int, payload: InsurancePolicyCreate, db: Session = 
 	if not policy:
 		raise NotFoundError("Policy", policy_id)
 	updated = svc_update_policy(db, policy, payload)
-	log.info("policy_updated", policyId=updated.id, carId=updated.car_id, provider=updated.provider)
 	return updated
 
 
@@ -102,5 +98,4 @@ def delete_policy(policy_id: int, db: Session = Depends(get_db)):
 	if not policy:
 		raise NotFoundError("Policy", policy_id)
 	svc_delete_policy(db, policy)
-	log.info("policy_deleted", policyId=policy.id, carId=policy.car_id)
 	return None

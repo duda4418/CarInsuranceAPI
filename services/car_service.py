@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session, joinedload
 from db.models import Car, Owner
 from services.exceptions import NotFoundError, ValidationError
 from api.schemas import CarCreate
+from core.logging import get_logger
+
+log = get_logger()
 
 
 def list_cars(db: Session) -> list[Car]:
@@ -34,6 +37,7 @@ def create_car(db: Session, data: CarCreate) -> Car:
             raise ValidationError(f"VIN '{data.vin}' already exists")
         raise
     db.refresh(car)
+    log.info("car_created", carId=car.id, ownerId=car.owner_id, vin=car.vin)
     return car
 
 
@@ -59,6 +63,7 @@ def update_car(db: Session, car_id: int, data: CarCreate) -> Car:
             raise ValidationError("Update violates data integrity constraints")
         raise
     db.refresh(car)
+    log.info("car_updated", carId=car.id, ownerId=car.owner_id, vin=car.vin)
     return car
 
 
@@ -68,3 +73,4 @@ def delete_car(db: Session, car_id: int) -> None:
         raise NotFoundError("Car", car_id)
     db.delete(car)
     db.commit()
+    log.info("car_deleted", carId=car_id)

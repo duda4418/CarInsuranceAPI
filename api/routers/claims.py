@@ -13,9 +13,6 @@ from services.claim_service import (
 	update_claim as svc_update_claim,
 	delete_claim as svc_delete_claim,
 )
-from core.logging import get_logger
-
-log = get_logger()
 
 claims_router = APIRouter()
 
@@ -65,7 +62,6 @@ def create_claim(payload: ClaimCreate, db: Session = Depends(get_db), response: 
 	claim = svc_create_claim(db, payload.car_id, payload)
 	if response is not None:
 		response.headers["Location"] = f"/api/claims/{claim.id}"
-	log.info("claim_created", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
 	return claim
 
 
@@ -84,7 +80,6 @@ def update_claim(claim_id: int, payload: ClaimCreate, db: Session = Depends(get_
 	if not claim:
 		raise NotFoundError("Claim", claim_id)
 	updated = svc_update_claim(db, claim, payload)
-	log.info("claim_updated", claimId=updated.id, carId=updated.car_id, amount=float(updated.amount))
 	return updated
 
 
@@ -102,6 +97,5 @@ def delete_claim(claim_id: int, db: Session = Depends(get_db)):
 	if not claim:
 		raise NotFoundError("Claim", claim_id)
 	svc_delete_claim(db, claim)
-	log.info("claim_deleted", claimId=claim.id, carId=claim.car_id)
 	return None
 

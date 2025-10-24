@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from db.models import Claim, Car
 from services.exceptions import NotFoundError, ValidationError
 from api.schemas import ClaimCreate
+from core.logging import get_logger
+
+log = get_logger()
 
 
 def create_claim(db: Session, car_id: int, data: ClaimCreate) -> Claim:
@@ -21,6 +24,7 @@ def create_claim(db: Session, car_id: int, data: ClaimCreate) -> Claim:
     db.commit()
     db.refresh(claim)
 
+    log.info("claim_created", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
     return claim
 
 
@@ -36,6 +40,7 @@ def update_claim(db: Session, claim: Claim, data: ClaimCreate) -> Claim:
     db.commit()
     db.refresh(claim)
 
+    log.info("claim_updated", claimId=claim.id, carId=claim.car_id, amount=float(claim.amount))
     return claim
 
 
@@ -48,5 +53,8 @@ def list_claims(db: Session) -> list[Claim]:
 
 
 def delete_claim(db: Session, claim: Claim) -> None:
+    claim_id = claim.id
+    car_id = claim.car_id
     db.delete(claim)
     db.commit()
+    log.info("claim_deleted", claimId=claim_id, carId=car_id)

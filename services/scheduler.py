@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import structlog
 
 from core.settings import settings
+from core.logging import get_logger
 from core.redis import acquire_lock, release_lock
 from db.session import get_db
 from services.policy_service import (
@@ -14,7 +15,7 @@ from services.policy_service import (
     mark_policy_logged,
 )
 
-log = structlog.get_logger()
+log = get_logger()
 
 LOCK_KEY = settings.REDIS_LOCK_KEY
 LOCK_TTL_SECONDS = settings.REDIS_LOCK_TTL_SECONDS  # Prevent overlapping runs within a minute
@@ -58,8 +59,8 @@ def _run_policy_expiry_job():
             )
             mark_policy_logged(db, p, now_local)
         db.commit()
-    except Exception as e:
-        log.error("policy_expiry_job_error", error=str(e))
+    except Exception:
+        log.exception("policy_expiry_job_error")
     finally:
         db.close()
         release_lock(LOCK_KEY)

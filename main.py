@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from contextlib import asynccontextmanager
 import warnings
 
-from core.logging import configure_logging
+from core.logging import configure_logging, get_logger
+from core.settings import settings
 from services.scheduler import start_scheduler, stop_scheduler
 from api.routers.errors import register_exception_handlers
 
@@ -20,6 +21,12 @@ warnings.filterwarnings(
 )
 
 
+log = get_logger()
+
+
+REQUEST_ID_HEADER = "X-Request-ID"
+
+
 def _build_lifespan(enable_scheduler: bool, configure_logs: bool):
     """Return a lifespan context manager configured for the requested flags.
     """
@@ -28,6 +35,11 @@ def _build_lifespan(enable_scheduler: bool, configure_logs: bool):
         # Startup
         if configure_logs:
             configure_logging()
+            log.info(
+                "app_startup",
+                env=settings.APP_ENV,
+                logLevel=(settings.LOG_LEVEL or ("DEBUG" if settings.APP_ENV in ("local", "dev") else "INFO")).upper(),
+            )
         if enable_scheduler:
             start_scheduler()
         yield
@@ -51,6 +63,26 @@ def create_app(*, enable_scheduler: bool = True, configure_logs: bool = True) ->
     """
     lifespan = _build_lifespan(enable_scheduler=enable_scheduler, configure_logs=configure_logs)
     app = FastAPI(title="Car Insurance API", version="0.1.0", lifespan=lifespan)
+
+    # Middleware: bind request_id and request metadata
+    @app.middleware("http")
+    async def request_context_middleware(request: Request, call_next):  # type: ignore[unused-ignore]
+        import structlog, uuid
+        # Extract/generate request id
+        request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
+        structlog.contextvars.bind_contextvars(request_id=request_id, path=request.url.path, method=request.method)
+        try:
+            response: Response = await call_next(request)
+        except Exception:
+            # Ensure stack trace is logged with context (global exception handler may also run)
+            log.exception("unhandled_exception")
+            raise
+        finally:
+            # Clear to avoid leaking a cross tasks
+            structlog.contextvars.clear_contextvars()
+        # Propagate request id header
+        response.headers.setdefault(REQUEST_ID_HEADER, request_id)
+        return response
 
     # Routers
     app.include_router(health_router, prefix="/api")
