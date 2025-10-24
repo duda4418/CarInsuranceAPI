@@ -1,18 +1,23 @@
 """Car service: encapsulates Car CRUD and nested resource creation orchestration."""
+
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
-from db.models import Car, Owner
-from services.exceptions import NotFoundError, ValidationError
+
 from api.schemas import CarCreate
 from core.logging import get_logger
+from db.models import Car, Owner
+from services.exceptions import NotFoundError, ValidationError
 
 log = get_logger()
 
 
 def list_cars(db: Session) -> list[Car]:
+    """List all cars with their owners."""
     return db.query(Car).options(joinedload(Car.owner)).all()
 
 
 def get_car(db: Session, car_id: int) -> Car:
+    """Get a car by ID, including owner."""
     car = db.query(Car).options(joinedload(Car.owner)).filter(Car.id == car_id).first()
     if not car:
         raise NotFoundError("Car", car_id)
@@ -20,6 +25,7 @@ def get_car(db: Session, car_id: int) -> Car:
 
 
 def create_car(db: Session, data: CarCreate) -> Car:
+    """Create a new car and assign to owner."""
     owner = db.query(Owner).filter(Owner.id == data.owner_id).first()
     if not owner:
         raise NotFoundError("Owner", data.owner_id)
@@ -31,7 +37,6 @@ def create_car(db: Session, data: CarCreate) -> Car:
     try:
         db.commit()
     except Exception as e:
-        from sqlalchemy.exc import IntegrityError
         db.rollback()
         if isinstance(e, IntegrityError):
             raise ValidationError(f"VIN '{data.vin}' already exists")
@@ -42,6 +47,7 @@ def create_car(db: Session, data: CarCreate) -> Car:
 
 
 def update_car(db: Session, car_id: int, data: CarCreate) -> Car:
+    """Update an existing car's details."""
     car = db.query(Car).filter(Car.id == car_id).first()
     if not car:
         raise NotFoundError("Car", car_id)
@@ -57,7 +63,6 @@ def update_car(db: Session, car_id: int, data: CarCreate) -> Car:
     try:
         db.commit()
     except Exception as e:
-        from sqlalchemy.exc import IntegrityError
         db.rollback()
         if isinstance(e, IntegrityError):
             raise ValidationError("Update violates data integrity constraints")
@@ -68,6 +73,7 @@ def update_car(db: Session, car_id: int, data: CarCreate) -> Car:
 
 
 def delete_car(db: Session, car_id: int) -> None:
+    """Delete a car by ID."""
     car = db.query(Car).filter(Car.id == car_id).first()
     if not car:
         raise NotFoundError("Car", car_id)

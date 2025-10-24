@@ -1,19 +1,19 @@
 """Background scheduler with Redis lock for policy expiry logging."""
+
 from __future__ import annotations
-from datetime import date, datetime
+
+from datetime import datetime
 from zoneinfo import ZoneInfo
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import Session
-import structlog
 
-from core.settings import settings
 from core.logging import get_logger
 from core.redis import acquire_lock, release_lock
+from core.settings import settings
 from db.session import get_db
-from services.policy_service import (
-    get_unlogged_expiring_policies,
-    mark_policy_logged,
-)
+from services.policy_service import (get_unlogged_expiring_policies,
+                                     mark_policy_logged)
 
 log = get_logger()
 
@@ -43,7 +43,10 @@ def _run_policy_expiry_job():
             return
         if not in_window:
             # Check if any policy already has logged_expiry_at today (catch-up logic)
-            already_logged = any(p.logged_expiry_at and p.logged_expiry_at.date() == today for p in expiring)
+            already_logged = any(
+                p.logged_expiry_at and p.logged_expiry_at.date() == today
+                for p in expiring
+            )
             if already_logged:
                 return
             log.info("policy_expiry_catchup", date=today.isoformat())

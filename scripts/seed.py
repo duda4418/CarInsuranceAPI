@@ -12,22 +12,24 @@ Flags:
 
 The script is idempotent when --purge is used; otherwise it just appends.
 """
+
 from __future__ import annotations
 
 import argparse
 import random
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from decimal import Decimal
 
 from faker import Faker
 from sqlalchemy.orm import Session
 
-from db.session import SessionLocal
 from db import models
+from db.session import SESSION_LOCAL
 
 fake = Faker()
 
 # -------------- Helpers --------------
+
 
 def random_date_between(start: date, end: date) -> date:
     """Return a random date between start and end inclusive."""
@@ -36,10 +38,7 @@ def random_date_between(start: date, end: date) -> date:
 
 
 def create_owner(session: Session) -> models.Owner:
-    owner = models.Owner(
-        name=fake.name(),
-        email=fake.unique.email()
-    )
+    owner = models.Owner(name=fake.name(), email=fake.unique.email())
     session.add(owner)
     return owner
 
@@ -49,7 +48,9 @@ def create_car(session: Session, owner: models.Owner) -> models.Car:
     car = models.Car(
         vin=vin,
         make=random.choice(["Ford", "Toyota", "BMW", "Audi", "Tesla", "VW", "Volvo"]),
-        model=random.choice(["S", "X", "CX-5", "Corolla", "Focus", "A4", "320", "Model 3"]),
+        model=random.choice(
+            ["S", "X", "CX-5", "Corolla", "Focus", "A4", "320", "Model 3"]
+        ),
         year_of_manufacture=random.randint(2005, 2024),
         owner=owner,
     )
@@ -73,7 +74,9 @@ def create_policy(session: Session, car: models.Car) -> models.InsurancePolicy:
 
     policy = models.InsurancePolicy(
         car=car,
-        provider=random.choice(["AXA", "Allianz", "Zurich", "Generali", "StateFarm", "Liberty"]),
+        provider=random.choice(
+            ["AXA", "Allianz", "Zurich", "Generali", "StateFarm", "Liberty"]
+        ),
         start_date=start,
         end_date=end_date,
         logged_expiry_at=None,
@@ -85,7 +88,7 @@ def create_policy(session: Session, car: models.Car) -> models.InsurancePolicy:
 def create_claim(session: Session, car: models.Car) -> models.Claim:
     today = date.today()
     claim_date = today - timedelta(days=random.randint(0, 720))
-    amount = Decimal(random.randint(200, 5000)) + Decimal(random.randint(0, 99))/100
+    amount = Decimal(random.randint(200, 5000)) + Decimal(random.randint(0, 99)) / 100
     claim = models.Claim(
         car=car,
         claim_date=claim_date,
@@ -106,8 +109,15 @@ def purge_data(session: Session) -> None:
 
 # -------------- Main seeding routine --------------
 
-def seed(owners: int, cars_per_owner: int, policies_per_car: int, claims_per_car: int, purge: bool) -> None:
-    session = SessionLocal()
+
+def seed(
+    owners: int,
+    cars_per_owner: int,
+    policies_per_car: int,
+    claims_per_car: int,
+    purge: bool,
+) -> None:
+    session = SESSION_LOCAL()
     try:
         if purge:
             purge_data(session)
@@ -133,13 +143,18 @@ def seed(owners: int, cars_per_owner: int, policies_per_car: int, claims_per_car
 
 # -------------- CLI --------------
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Seed database with mock data")
     parser.add_argument("--owners", type=int, default=5, help="Number of owners")
     parser.add_argument("--cars-per-owner", type=int, default=2, help="Cars per owner")
-    parser.add_argument("--policies-per-car", type=int, default=1, help="Policies per car")
+    parser.add_argument(
+        "--policies-per-car", type=int, default=1, help="Policies per car"
+    )
     parser.add_argument("--claims-per-car", type=int, default=2, help="Claims per car")
-    parser.add_argument("--purge", action="store_true", help="Delete existing data first")
+    parser.add_argument(
+        "--purge", action="store_true", help="Delete existing data first"
+    )
     return parser.parse_args()
 
 

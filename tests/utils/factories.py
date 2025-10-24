@@ -1,15 +1,20 @@
 """Simple factory helpers for creating model instances in tests.
 Avoids using heavy external libs until needed.
 """
-from datetime import date
-from sqlalchemy.orm import Session
-from db.models import Car, InsurancePolicy, Claim, Owner
 
+from datetime import date
+
+from sqlalchemy.orm import Session
+
+from db.models import Car, Claim, InsurancePolicy, Owner
 
 _car_counter = 0
 _owner_counter = 0
 
-def create_owner(db: Session, name: str | None = None, email: str | None = None) -> Owner:
+
+def create_owner(
+    db: Session, name: str | None = None, email: str | None = None
+) -> Owner:
     global _owner_counter
     _owner_counter += 1
     name = name or f"Owner{_owner_counter}"
@@ -34,7 +39,9 @@ def create_car(
     if owner is None:
         owner = create_owner(db)
     vin = vin or f"VIN{_car_counter:05d}"
-    car = Car(vin=vin, make=make, model=model, owner_id=owner.id, year_of_manufacture=year)
+    car = Car(
+        vin=vin, make=make, model=model, owner_id=owner.id, year_of_manufacture=year
+    )
     db.add(car)
     db.commit()
     db.refresh(car)
@@ -86,6 +93,7 @@ def create_claim(
     db.commit()
     db.refresh(claim)
     return claim
+
 
 __all__ = [
     "create_owner",

@@ -1,14 +1,19 @@
 """Redis connection and distributed lock helpers."""
+
 from __future__ import annotations
+
 import time
 from typing import Optional
+
 import redis
+
 from core.settings import settings
 
 _redis_client: Optional[redis.Redis] = None
 
 
 def get_redis() -> redis.Redis:
+    """Get or create a Redis client instance."""
     global _redis_client
     if _redis_client is None:
         _redis_client = redis.Redis(
@@ -31,5 +36,6 @@ def acquire_lock(key: str, ttl_seconds: int) -> bool:
 
 
 def release_lock(key: str) -> None:
+    """Release a distributed lock by key."""
     client = get_redis()
     client.delete(key)

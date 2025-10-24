@@ -1,4 +1,5 @@
 import pytest
+
 from services.validity_service import is_insurance_valid
 from tests.utils.factories import create_car, create_policy
 

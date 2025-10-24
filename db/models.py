@@ -1,16 +1,21 @@
+"""SQLAlchemy ORM models for Car Insurance API."""
+
 from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from sqlalchemy import (
-    String, Integer, Date, DateTime, Numeric, ForeignKey, Text, func
-)
+
+from sqlalchemy import (Date, DateTime, ForeignKey, Integer, Numeric, String,
+                        Text, func)
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from db.base import Base
 
 
 class Owner(Base):
+    """ORM model for car owners."""
+
     __tablename__ = "owner"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -26,10 +31,14 @@ class Owner(Base):
 
 
 class Car(Base):
+    """ORM model for cars."""
+
     __tablename__ = "car"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    vin: Mapped[str] = mapped_column(String(32), nullable=False, unique=True, index=True)
+    vin: Mapped[str] = mapped_column(
+        String(32), nullable=False, unique=True, index=True
+    )
     make: Mapped[str | None] = mapped_column(String(100))
     model: Mapped[str | None] = mapped_column(String(100))
     year_of_manufacture: Mapped[int | None] = mapped_column(Integer)
@@ -49,6 +58,8 @@ class Car(Base):
 
 
 class InsurancePolicy(Base):
+    """ORM model for insurance policies."""
+
     __tablename__ = "insurance_policy"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -70,6 +81,8 @@ class InsurancePolicy(Base):
 
 
 class Claim(Base):
+    """ORM model for insurance claims."""
+
     __tablename__ = "claim"
 
     id: Mapped[int] = mapped_column(primary_key=True)

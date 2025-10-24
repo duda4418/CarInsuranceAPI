@@ -1,6 +1,11 @@
+"""Application settings and environment configuration."""
+
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
+    """Pydantic settings for application configuration."""
+
     APP_ENV: str = "local"
     POSTGRES_DB: str
     POSTGRES_USER: str
@@ -15,12 +20,13 @@ class Settings(BaseSettings):
     SCHEDULER_ENABLED: bool = True
     SCHEDULER_TIMEZONE: str = "UTC"
     LOG_LEVEL: str | None = None
-    # POLICY_DATE_MODE: str = "date_only"  
+    # POLICY_DATE_MODE: str = "date_only"
     REDIS_LOCK_KEY: str = "policy-expiry-lock"
     REDIS_LOCK_TTL_SECONDS: int = 60
 
     @property
     def DATABASE_URL(self) -> str:
+        """Build the SQLAlchemy database URL from settings."""
         return (
             f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -29,5 +35,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         extra = "ignore"
+
 
 settings = Settings()

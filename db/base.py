@@ -1,8 +1,7 @@
-# db/base.py
-from __future__ import annotations
+"""SQLAlchemy base class and metadata for models."""
 
-from sqlalchemy import MetaData, DateTime, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import MetaData
+from sqlalchemy.orm import DeclarativeBase
 
 # Deterministic names for constraints
 NAMING_CONVENTION = {
@@ -17,9 +16,11 @@ metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
 class Base(DeclarativeBase):
+    """Declarative base class for all ORM models."""
+
     metadata = metadata
 
     def __repr__(self) -> str:
+        """String representation with class name and id."""
         pk = getattr(self, "id", None)
         return f"<{self.__class__.__name__} id={pk!r}>"
-

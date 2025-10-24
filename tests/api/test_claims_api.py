@@ -1,4 +1,3 @@
-from fastapi.testclient import TestClient
 from tests.utils.factories import create_car
 
 
@@ -9,7 +8,7 @@ def test_create_claim_success(client, db_session):
         "car_id": car.id,
         "description": "Rear bumper scratch",
         "amount": 250.75,
-        "claim_date": "2025-02-01"
+        "claim_date": "2025-02-01",
     }
     resp = client.post("/api/claims", json=payload)
     assert resp.status_code == 201
@@ -24,7 +23,7 @@ def test_create_claim_car_not_found(client):
         "car_id": 9999,
         "description": "Bad",
         "amount": 10,
-        "claim_date": "2025-02-02"
+        "claim_date": "2025-02-02",
     }
     resp = client.post("/api/claims", json=payload)
     assert resp.status_code == 404

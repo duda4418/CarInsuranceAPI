@@ -7,7 +7,7 @@ def test_update_claim_success(client, db_session):
         "car_id": car.id,
         "description": "Scratch",
         "amount": 100.0,
-        "claim_date": "2025-02-01"
+        "claim_date": "2025-02-01",
     }
     create_resp = client.post("/api/claims", json=payload)
     claim_id = create_resp.json()["id"]
@@ -16,14 +16,13 @@ def test_update_claim_success(client, db_session):
         "car_id": car.id,
         "description": "Scratch repainted",
         "amount": 180.0,
-        "claim_date": "2025-02-05"
+        "claim_date": "2025-02-05",
     }
     upd = client.put(f"/api/claims/{claim_id}", json=update_payload)
     assert upd.status_code == 200
     data = upd.json()
     assert data["description"] == "Scratch repainted"
     assert float(data["amount"]) == 180.0
-
 
 
 def test_update_claim_car_id_immutable(client, db_session):
@@ -33,7 +32,7 @@ def test_update_claim_car_id_immutable(client, db_session):
         "car_id": car1.id,
         "description": "Broken light",
         "amount": 60.0,
-        "claim_date": "2025-03-01"
+        "claim_date": "2025-03-01",
     }
     create_resp = client.post("/api/claims", json=payload)
     claim_id = create_resp.json()["id"]
@@ -42,13 +41,12 @@ def test_update_claim_car_id_immutable(client, db_session):
         "car_id": car2.id,  # Should be ignored
         "description": "Broken light",
         "amount": 60.0,
-        "claim_date": "2025-03-01"
+        "claim_date": "2025-03-01",
     }
     upd = client.put(f"/api/claims/{claim_id}", json=update_payload)
     assert upd.status_code == 200
     # carId should remain unchanged
     assert upd.json()["carId"] == car1.id
-
 
 
 def test_update_claim_car_id_immutable_not_found(client, db_session):
@@ -57,7 +55,7 @@ def test_update_claim_car_id_immutable_not_found(client, db_session):
         "car_id": car.id,
         "description": "Door dent",
         "amount": 220.0,
-        "claim_date": "2025-04-01"
+        "claim_date": "2025-04-01",
     }
     create_resp = client.post("/api/claims", json=payload)
     claim_id = create_resp.json()["id"]
@@ -66,7 +64,7 @@ def test_update_claim_car_id_immutable_not_found(client, db_session):
         "car_id": 999999,  # Should be ignored
         "description": "Door dent",
         "amount": 220.0,
-        "claim_date": "2025-04-01"
+        "claim_date": "2025-04-01",
     }
     upd = client.put(f"/api/claims/{claim_id}", json=update_payload)
     assert upd.status_code == 200
@@ -80,7 +78,7 @@ def test_delete_claim_success(client, db_session):
         "car_id": car.id,
         "description": "Rear bumper",
         "amount": 300.0,
-        "claim_date": "2025-05-01"
+        "claim_date": "2025-05-01",
     }
     create_resp = client.post("/api/claims", json=payload)
     claim_id = create_resp.json()["id"]

@@ -1,21 +1,19 @@
-from fastapi import FastAPI, Request, Response
-from contextlib import asynccontextmanager
 import warnings
+from contextlib import asynccontextmanager
 
-from core.logging import configure_logging, get_logger
-from core.settings import settings
-from services.scheduler import start_scheduler, stop_scheduler
+from fastapi import FastAPI, Request, Response
+
 from api.errors import register_exception_handlers
-
 from api.routers.cars import cars_router
 from api.routers.claims import claims_router
 from api.routers.health import health_router
 from api.routers.policies import policies_router
+from core.logging import configure_logging, get_logger
+from core.settings import settings
+from services.scheduler import start_scheduler, stop_scheduler
 
 warnings.filterwarnings(
-    "ignore",
-    category=UserWarning,
-    module="pydantic._internal._generate_schema"
+    "ignore", category=UserWarning, module="pydantic._internal._generate_schema"
 )
 
 
@@ -26,8 +24,8 @@ REQUEST_ID_HEADER = "X-Request-ID"
 
 
 def _build_lifespan(enable_scheduler: bool, configure_logs: bool):
-    """Return a lifespan context manager configured for the requested flags.
-    """
+    """Return a lifespan context manager configured for the requested flags."""
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):  # type: ignore[unused-ignore]
         # Startup
@@ -36,7 +34,10 @@ def _build_lifespan(enable_scheduler: bool, configure_logs: bool):
             log.info(
                 "app_startup",
                 env=settings.APP_ENV,
-                logLevel=(settings.LOG_LEVEL or ("DEBUG" if settings.APP_ENV in ("local", "dev") else "INFO")).upper(),
+                logLevel=(
+                    settings.LOG_LEVEL
+                    or ("DEBUG" if settings.APP_ENV in ("local", "dev") else "INFO")
+                ).upper(),
             )
         if enable_scheduler:
             start_scheduler()
@@ -44,10 +45,13 @@ def _build_lifespan(enable_scheduler: bool, configure_logs: bool):
         # Shutdown
         if enable_scheduler:
             stop_scheduler()
+
     return lifespan
 
 
-def create_app(*, enable_scheduler: bool = True, configure_logs: bool = True) -> FastAPI:
+def create_app(
+    *, enable_scheduler: bool = True, configure_logs: bool = True
+) -> FastAPI:
     """Application factory.
 
     Parameters
@@ -59,16 +63,23 @@ def create_app(*, enable_scheduler: bool = True, configure_logs: bool = True) ->
 
     In production just import `app` or run with uvicorn: `uvicorn main:app`.
     """
-    lifespan = _build_lifespan(enable_scheduler=enable_scheduler, configure_logs=configure_logs)
+    lifespan = _build_lifespan(
+        enable_scheduler=enable_scheduler, configure_logs=configure_logs
+    )
     app = FastAPI(title="Car Insurance API", version="0.1.0", lifespan=lifespan)
 
     # Middleware: bind request_id and request metadata
     @app.middleware("http")
     async def request_context_middleware(request: Request, call_next):  # type: ignore[unused-ignore]
-        import structlog, uuid
+        import uuid
+
+        import structlog
+
         # Extract/generate request id
         request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
-        structlog.contextvars.bind_contextvars(request_id=request_id, path=request.url.path, method=request.method)
+        structlog.contextvars.bind_contextvars(
+            request_id=request_id, path=request.url.path, method=request.method
+        )
         try:
             response: Response = await call_next(request)
         except Exception:
@@ -98,4 +109,5 @@ __all__ = ["create_app", "app"]
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

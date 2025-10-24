@@ -1,9 +1,12 @@
 """Insurance validity orchestration service."""
+
 from datetime import date
+
 from sqlalchemy.orm import Session
+
 from db.models import Car
-from services.policy_service import get_active_policy
 from services.exceptions import NotFoundError, ValidationError
+from services.policy_service import get_active_policy
 
 
 def is_insurance_valid(db: Session, car_id: int, on_date_str: str) -> bool:
@@ -13,7 +16,7 @@ def is_insurance_valid(db: Session, car_id: int, on_date_str: str) -> bool:
         raise NotFoundError("Car", car_id)
 
     try:
-        year, month, day = map(int, on_date_str.split('-'))
+        year, month, day = map(int, on_date_str.split("-"))
         on_date = date(year, month, day)
     except Exception:
         raise ValidationError("Invalid date format; expected YYYY-MM-DD")

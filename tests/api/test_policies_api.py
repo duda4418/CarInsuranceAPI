@@ -1,4 +1,3 @@
-from fastapi.testclient import TestClient
 from tests.utils.factories import create_car
 
 
@@ -10,7 +9,7 @@ def test_create_policy_success(client, db_session):
         "car_id": car.id,
         "provider": "Acme Insurance",
         "start_date": "2025-01-01",
-        "end_date": "2025-12-31"
+        "end_date": "2025-12-31",
     }
 
     # Act

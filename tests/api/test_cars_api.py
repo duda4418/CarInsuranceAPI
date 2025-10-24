@@ -1,8 +1,7 @@
-from db.models import Owner, Car
-import pytest
+from db.models import Owner
+
 
 # Helper to create an owner
-
 def create_owner(db_session, name="Alice", email="alice@example.com"):
     owner = Owner(name=name, email=email)
     db_session.add(owner)
@@ -18,7 +17,7 @@ def test_create_car_success(client, db_session):
         "make": "Ford",
         "model": "Focus",
         "year_of_manufacture": 2022,
-        "owner_id": owner.id
+        "owner_id": owner.id,
     }
     resp = client.post("/api/cars", json=payload)
     assert resp.status_code == 201
@@ -35,7 +34,7 @@ def test_create_car_duplicate_vin(client, db_session):
         "make": "Ford",
         "model": "Fiesta",
         "year_of_manufacture": 2021,
-        "owner_id": owner.id
+        "owner_id": owner.id,
     }
     first = client.post("/api/cars", json=payload)
     assert first.status_code == 201
@@ -55,7 +54,7 @@ def test_update_car_success(client, db_session):
         "make": "Ford",
         "model": "Focus",
         "year_of_manufacture": 2022,
-        "owner_id": owner.id
+        "owner_id": owner.id,
     }
     create_resp = client.post("/api/cars", json=payload)
     car_id = create_resp.json()["id"]
@@ -65,7 +64,7 @@ def test_update_car_success(client, db_session):
         "make": "Ford",
         "model": "Fusion",
         "year_of_manufacture": 2023,
-        "owner_id": owner.id
+        "owner_id": owner.id,
     }
     upd = client.put(f"/api/cars/{car_id}", json=update_payload)
     assert upd.status_code == 200
@@ -77,9 +76,21 @@ def test_update_car_success(client, db_session):
 def test_update_car_vin_duplicate(client, db_session):
     owner = create_owner(db_session)
     # Create first car
-    payload_a = {"vin": "VIN_A", "make": "A", "model": "M1", "year_of_manufacture": 2020, "owner_id": owner.id}
+    payload_a = {
+        "vin": "VIN_A",
+        "make": "A",
+        "model": "M1",
+        "year_of_manufacture": 2020,
+        "owner_id": owner.id,
+    }
     car_a = client.post("/api/cars", json=payload_a).json()
-    payload_b = {"vin": "VIN_B", "make": "B", "model": "M2", "year_of_manufacture": 2021, "owner_id": owner.id}
+    payload_b = {
+        "vin": "VIN_B",
+        "make": "B",
+        "model": "M2",
+        "year_of_manufacture": 2021,
+        "owner_id": owner.id,
+    }
     car_b = client.post("/api/cars", json=payload_b).json()
 
     # Attempt to update car_b to use VIN_A
@@ -90,7 +101,13 @@ def test_update_car_vin_duplicate(client, db_session):
 
 def test_delete_car_success(client, db_session):
     owner = create_owner(db_session)
-    payload = {"vin": "VINDEL", "make": "Ford", "model": "Edge", "year_of_manufacture": 2021, "owner_id": owner.id}
+    payload = {
+        "vin": "VINDEL",
+        "make": "Ford",
+        "model": "Edge",
+        "year_of_manufacture": 2021,
+        "owner_id": owner.id,
+    }
     create_resp = client.post("/api/cars", json=payload)
     car_id = create_resp.json()["id"]
     del_resp = client.delete(f"/api/cars/{car_id}")
