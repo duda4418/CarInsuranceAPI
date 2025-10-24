@@ -1,8 +1,8 @@
 from tests.utils.factories import create_car
 
 
-def test_update_policy_success(client, db_session):
-    car = create_car(db_session, vin="VPOLX1")
+def test_update_policy_success(client, db_session_fixture):
+    car = create_car(db_session_fixture, vin="VPOLX1")
     payload = {
         "car_id": car.id,
         "provider": "ProviderA",
@@ -25,9 +25,9 @@ def test_update_policy_success(client, db_session):
     assert upd.json()["startDate"] == "2025-02-01"
 
 
-def test_update_policy_car_id_immutable(client, db_session):
-    car1 = create_car(db_session, vin="VPOLA1")
-    car2 = create_car(db_session, vin="VPOLB2")
+def test_update_policy_car_id_immutable(client, db_session_fixture):
+    car1 = create_car(db_session_fixture, vin="VPOLA1")
+    car2 = create_car(db_session_fixture, vin="VPOLB2")
     payload = {
         "car_id": car1.id,
         "provider": "ProviderA",
@@ -49,8 +49,8 @@ def test_update_policy_car_id_immutable(client, db_session):
     assert upd.json()["carId"] == car1.id
 
 
-def test_update_policy_car_id_immutable_not_found(client, db_session):
-    car = create_car(db_session, vin="VPOLNF1")
+def test_update_policy_car_id_immutable_not_found(client, db_session_fixture):
+    car = create_car(db_session_fixture, vin="VPOLNF1")
     payload = {
         "car_id": car.id,
         "provider": "ProviderA",
@@ -72,8 +72,8 @@ def test_update_policy_car_id_immutable_not_found(client, db_session):
     assert upd.json()["carId"] == car.id
 
 
-def test_delete_policy_success(client, db_session):
-    car = create_car(db_session, vin="VPOLD1")
+def test_delete_policy_success(client, db_session_fixture):
+    car = create_car(db_session_fixture, vin="VPOLD1")
     payload = {
         "car_id": car.id,
         "provider": "ProviderA",

@@ -1,8 +1,8 @@
 from tests.utils.factories import create_car
 
 
-def test_create_claim_success(client, db_session):
-    car = create_car(db_session, make="VW", model="Golf")
+def test_create_claim_success(client, db_session_fixture):
+    car = create_car(db_session_fixture, make="VW", model="Golf")
 
     payload = {
         "car_id": car.id,

@@ -1,43 +1,46 @@
-# one-time fresh start (drops volume, recreates, migrates, seeds, runs api)
-.\scripts\setup\db.ps1 -Init
-.\scripts\setup\run.ps1 -Seed
 
-# normal day-to-day (start everything, migrate, run api; no seeding)
-.\scripts\setup\run.ps1
+# Car Insurance API - Quick Start
 
-# only reseed (when API already running)
-.\scripts\db\seed-database.ps1
-
-# seeding with custom parameters (when API already running)
-python scripts/seed.py --owners 10 --cars-per-owner 3 --policies-per-car 2 --claims-per-car 4 --purge
-
-## Background Scheduler & Redis
-
-The policy expiry logging job runs every `SCHEDULER_INTERVAL_MINUTES` (default 10) using APScheduler.
-A Redis-backed lock ensures only one instance processes expiries when multiple API containers are running.
-
-### Start Redis (local dev)
-
-Option A – Docker:
+## 1. Clone the repository
 ```powershell
-docker run --name redis -p 6379:6379 -d redis:7
+git clone <repo-url>
+cd CarInsuranceAPI
 ```
 
-Option B – Existing Redis:
-Set environment variables in `.env`:
-```
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-```
-
-### Verify Redis
-Inside container:
+## 2. Create and activate a virtual environment
 ```powershell
-docker exec -it redis redis-cli PING
+py -m venv .venv
+.venv\Scripts\activate
 ```
 
-Python quick check:
+## 3. Install dependencies
+```powershell
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+## 4. Start PostgreSQL and Redis containers (Docker Compose)
+```powershell
+docker-compose up -d
+```
+
+## 5. Set environment variables
+Copy `.env.example` to `.env` and update values if needed.
+
+## 6. Run database migrations (if needed)
+```powershell
+alembic upgrade head
+```
+
+## 7. Start the application
+```powershell
+uvicorn main:app --reload
+```
+
+## 8. Run tests with coverage
+```powershell
+pytest --cov=. --cov-report=term-missing
+```
 ```powershell
 python - <<'PY'
 import redis

@@ -2,16 +2,16 @@ from db.models import Owner
 
 
 # Helper to create an owner
-def create_owner(db_session, name="Alice", email="alice@example.com"):
+def create_owner(db_session_fixture, name="Alice", email="alice@example.com"):
     owner = Owner(name=name, email=email)
-    db_session.add(owner)
-    db_session.commit()
-    db_session.refresh(owner)
+    db_session_fixture.add(owner)
+    db_session_fixture.commit()
+    db_session_fixture.refresh(owner)
     return owner
 
 
-def test_create_car_success(client, db_session):
-    owner = create_owner(db_session)
+def test_create_car_success(client, db_session_fixture):
+    owner = create_owner(db_session_fixture)
     payload = {
         "vin": "VIN123",
         "make": "Ford",
@@ -27,8 +27,8 @@ def test_create_car_success(client, db_session):
     assert data["owner"]["id"] == owner.id
 
 
-def test_create_car_duplicate_vin(client, db_session):
-    owner = create_owner(db_session)
+def test_create_car_duplicate_vin(client, db_session_fixture):
+    owner = create_owner(db_session_fixture)
     payload = {
         "vin": "VIN_DUP",
         "make": "Ford",
@@ -47,8 +47,8 @@ def test_get_car_not_found(client):
     assert resp.status_code == 404
 
 
-def test_update_car_success(client, db_session):
-    owner = create_owner(db_session)
+def test_update_car_success(client, db_session_fixture):
+    owner = create_owner(db_session_fixture)
     payload = {
         "vin": "VINUPD1",
         "make": "Ford",
@@ -73,8 +73,8 @@ def test_update_car_success(client, db_session):
     assert data["model"] == "Fusion"
 
 
-def test_update_car_vin_duplicate(client, db_session):
-    owner = create_owner(db_session)
+def test_update_car_vin_duplicate(client, db_session_fixture):
+    owner = create_owner(db_session_fixture)
     # Create first car
     payload_a = {
         "vin": "VIN_A",
@@ -99,8 +99,8 @@ def test_update_car_vin_duplicate(client, db_session):
     assert resp.status_code == 400
 
 
-def test_delete_car_success(client, db_session):
-    owner = create_owner(db_session)
+def test_delete_car_success(client, db_session_fixture):
+    owner = create_owner(db_session_fixture)
     payload = {
         "vin": "VINDEL",
         "make": "Ford",

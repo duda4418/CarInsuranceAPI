@@ -6,9 +6,9 @@ from services.scheduler import _run_policy_expiry_job
 from tests.utils.factories import create_car
 
 
-def test_policy_expiry_job_marks_unlogged(db_session):
+def test_policy_expiry_job_marks_unlogged(db_session_fixture):
     # Arrange: create a policy expiring today with no logged_expiry_at
-    car = create_car(db_session, make="Test", model="Car")
+    car = create_car(db_session_fixture, make="Test", model="Car")
 
     today = datetime.now().date()
     policy = InsurancePolicy(
@@ -17,16 +17,16 @@ def test_policy_expiry_job_marks_unlogged(db_session):
         start_date=today,
         end_date=today,
     )
-    db_session.add(policy)
-    db_session.commit()
-    db_session.refresh(policy)
+    db_session_fixture.add(policy)
+    db_session_fixture.commit()
+    db_session_fixture.refresh(policy)
 
     def fake_get_db():
         # Create an independent session sharing the same engine (StaticPool ensures same memory DB)
         from sqlalchemy.orm import sessionmaker
 
         SessionLocalTest = sessionmaker(
-            bind=db_session.bind, autoflush=False, autocommit=False, future=True
+            bind=db_session_fixture.bind, autoflush=False, autocommit=False, future=True
         )
         test_db = SessionLocalTest()
         try:
@@ -45,7 +45,7 @@ def test_policy_expiry_job_marks_unlogged(db_session):
     from sqlalchemy.orm import sessionmaker
 
     SessionLocalTest = sessionmaker(
-        bind=db_session.bind, autoflush=False, autocommit=False, future=True
+    bind=db_session_fixture.bind, autoflush=False, autocommit=False, future=True
     )
     fresh = SessionLocalTest()
     try:

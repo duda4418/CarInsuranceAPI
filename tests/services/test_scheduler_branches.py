@@ -6,30 +6,30 @@ from services.scheduler import _run_policy_expiry_job
 from tests.utils.factories import create_car
 
 
-def test_scheduler_lock_fail(db_session):
+def test_scheduler_lock_fail(db_session_fixture):
     with patch("services.scheduler.acquire_lock", return_value=False):
         _run_policy_expiry_job()
     # Nothing to assert besides no exception
 
 
-def test_scheduler_empty_expiring_list(db_session):
+def test_scheduler_empty_expiring_list(db_session_fixture):
     with patch("services.scheduler.acquire_lock", return_value=True), patch(
         "services.scheduler.release_lock", return_value=None
-    ), patch("services.scheduler.get_db", return_value=iter([db_session])):
+    ), patch("services.scheduler.get_db", return_value=iter([db_session_fixture])):
         _run_policy_expiry_job()
     # No policies should be committed; nothing to assert except no errors
 
 
-def test_scheduler_catchup_outside_window(db_session):
+def test_scheduler_catchup_outside_window(db_session_fixture):
     # Create an expiring policy today
-    car = create_car(db_session, vin="SCH1", make="M", model="X", year=2024)
+    car = create_car(db_session_fixture, vin="SCH1", make="M", model="X", year=2024)
     today = datetime(2025, 1, 1, 10, 30)  # Outside first hour
     policy = InsurancePolicy(
         car_id=car.id, provider="Prov", start_date=today.date(), end_date=today.date()
     )
-    db_session.add(policy)
-    db_session.commit()
-    db_session.refresh(policy)
+    db_session_fixture.add(policy)
+    db_session_fixture.commit()
+    db_session_fixture.refresh(policy)
 
     class FakeDT(datetime):
         @classmethod
@@ -40,7 +40,7 @@ def test_scheduler_catchup_outside_window(db_session):
         from sqlalchemy.orm import sessionmaker
 
         SessionLocalTest = sessionmaker(
-            bind=db_session.bind, autoflush=False, autocommit=False, future=True
+            bind=db_session_fixture.bind, autoflush=False, autocommit=False, future=True
         )
         test_db = SessionLocalTest()
         try:
@@ -58,7 +58,7 @@ def test_scheduler_catchup_outside_window(db_session):
     from sqlalchemy.orm import sessionmaker
 
     SessionLocalTest = sessionmaker(
-        bind=db_session.bind, autoflush=False, autocommit=False, future=True
+    bind=db_session_fixture.bind, autoflush=False, autocommit=False, future=True
     )
     fresh = SessionLocalTest()
     try:

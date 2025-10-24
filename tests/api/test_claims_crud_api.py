@@ -1,8 +1,8 @@
 from tests.utils.factories import create_car
 
 
-def test_update_claim_success(client, db_session):
-    car = create_car(db_session, vin="VNCLM2")
+def test_update_claim_success(client, db_session_fixture):
+    car = create_car(db_session_fixture, vin="VNCLM2")
     payload = {
         "car_id": car.id,
         "description": "Scratch",
@@ -25,9 +25,9 @@ def test_update_claim_success(client, db_session):
     assert float(data["amount"]) == 180.0
 
 
-def test_update_claim_car_id_immutable(client, db_session):
-    car1 = create_car(db_session, vin="VNCLMA")
-    car2 = create_car(db_session, vin="VNCLMB")
+def test_update_claim_car_id_immutable(client, db_session_fixture):
+    car1 = create_car(db_session_fixture, vin="VNCLMA")
+    car2 = create_car(db_session_fixture, vin="VNCLMB")
     payload = {
         "car_id": car1.id,
         "description": "Broken light",
@@ -49,8 +49,8 @@ def test_update_claim_car_id_immutable(client, db_session):
     assert upd.json()["carId"] == car1.id
 
 
-def test_update_claim_car_id_immutable_not_found(client, db_session):
-    car = create_car(db_session, vin="VNCLMNF")
+def test_update_claim_car_id_immutable_not_found(client, db_session_fixture):
+    car = create_car(db_session_fixture, vin="VNCLMNF")
     payload = {
         "car_id": car.id,
         "description": "Door dent",
@@ -72,8 +72,8 @@ def test_update_claim_car_id_immutable_not_found(client, db_session):
     assert upd.json()["carId"] == car.id
 
 
-def test_delete_claim_success(client, db_session):
-    car = create_car(db_session, vin="VNCLMD")
+def test_delete_claim_success(client, db_session_fixture):
+    car = create_car(db_session_fixture, vin="VNCLMD")
     payload = {
         "car_id": car.id,
         "description": "Rear bumper",

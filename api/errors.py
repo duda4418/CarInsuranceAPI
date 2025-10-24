@@ -13,21 +13,21 @@ def register_exception_handlers(app):
     """Register all custom exception handlers to the FastAPI app."""
 
     @app.exception_handler(NotFoundError)
-    async def not_found_handler(exc: NotFoundError):
+    async def not_found_handler(request, exc: NotFoundError):
         """Handle NotFoundError exceptions."""
         return JSONResponse(
             status_code=404, content={"error": "not_found", "detail": str(exc)}
         )
 
     @app.exception_handler(DomainValidationError)
-    async def domain_validation_handler(exc: DomainValidationError):
+    async def domain_validation_handler(request, exc: DomainValidationError):
         """Handle domain validation errors."""
         return JSONResponse(
             status_code=400, content={"error": "validation_error", "detail": str(exc)}
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def starlette_http_exception_handler(exc: StarletteHTTPException):
+    async def starlette_http_exception_handler(request, exc: StarletteHTTPException):
         """Handle Starlette HTTP exceptions (including 404)."""
         if exc.status_code == 404:
             return JSONResponse(
@@ -40,7 +40,7 @@ def register_exception_handlers(app):
         )
 
     @app.exception_handler(RequestValidationError)
-    async def request_validation_error_handler(exc: RequestValidationError):
+    async def request_validation_error_handler(request, exc: RequestValidationError):
         """Handle Pydantic request validation errors."""
         # Flatten Pydantic error structure into a concise list
         errors = []

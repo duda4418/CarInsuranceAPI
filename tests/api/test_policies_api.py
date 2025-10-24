@@ -1,9 +1,9 @@
 from tests.utils.factories import create_car
 
 
-def test_create_policy_success(client, db_session):
+def test_create_policy_success(client, db_session_fixture):
     # Arrange: create a car with VIN + owner
-    car = create_car(db_session, make="Ford", model="Fiesta")
+    car = create_car(db_session_fixture, make="Ford", model="Fiesta")
 
     payload = {
         "car_id": car.id,
